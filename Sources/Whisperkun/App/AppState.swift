@@ -64,9 +64,9 @@ final class AppState {
     func applySettings() {
         dictation.aiFormattingEnabled = settings.aiFormattingEnabled
         dictation.defaultLocaleID = settings.defaultLocaleID
-        dictation.applyHotkeySettings(mode: settings.hotkeyMode, modifier: settings.hotkeyModifier)
+        dictation.applyHotkeySettings(mode: settings.hotkeyMode, modifiers: settings.hotkeyModifiers)
         // 修飾キーが設定済みで権限があれば監視を開始する（未設定なら applyHotkeySettings 側で停止済み）。
-        if settings.hotkeyModifier != nil, permissions.accessibilityGranted {
+        if !settings.hotkeyModifiers.isEmpty, permissions.accessibilityGranted {
             dictation.installHotkey()
         }
     }

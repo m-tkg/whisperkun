@@ -54,6 +54,31 @@ enum HotkeyModifier: String, CaseIterable, Codable {
         default: return nil
         }
     }
+
+    /// 表示順（⌃⌥⇧⌘ の慣習順）。
+    var sortOrder: Int {
+        switch self {
+        case .rightControl: return 0
+        case .rightOption: return 1
+        case .rightShift: return 2
+        case .rightCommand: return 3
+        }
+    }
+
+    /// 修飾キー集合の表示名（例: "右 Shift + 右 Command"）。空なら空文字。
+    static func displayName(for set: Set<HotkeyModifier>) -> String {
+        set.sorted { $0.sortOrder < $1.sortOrder }.map(\.displayName).joined(separator: " + ")
+    }
+
+    /// 修飾キー集合の記号表記（例: "⇧⌘"）。
+    static func symbols(for set: Set<HotkeyModifier>) -> String {
+        set.sorted { $0.sortOrder < $1.sortOrder }.map(\.symbol).joined()
+    }
+
+    /// 集合の device マスクの論理和。
+    static func combinedMask(_ set: Set<HotkeyModifier>) -> UInt64 {
+        set.reduce(UInt64(0)) { $0 | $1.deviceMask }
+    }
 }
 
 /// グローバルな修飾キーを監視してディクテーションを起動する。
@@ -63,8 +88,9 @@ enum HotkeyModifier: String, CaseIterable, Codable {
 @MainActor
 final class HotkeyService {
     var mode: HotkeyMode = .pushToTalk
-    /// 監視する修飾キー。`nil` は未設定（ホットキー無効）。
-    var modifier: HotkeyModifier?
+    /// 監視する修飾キーの組み合わせ。空は未設定（ホットキー無効）。
+    /// 複数指定時は「すべて同時に押されている」間だけ押下とみなす。
+    var modifiers: Set<HotkeyModifier> = []
 
     /// PTTで押下開始 / トグルで開始したいとき。
     var onStart: (() -> Void)?
@@ -82,7 +108,7 @@ final class HotkeyService {
     /// 修飾キーが未設定（nil）の場合は監視せず false を返す。
     @discardableResult
     func install() -> Bool {
-        guard modifier != nil else { return false }
+        guard !modifiers.isEmpty else { return false }
         guard eventTap == nil else { return true }
 
         let mask = CGEventMask(1 << CGEventType.flagsChanged.rawValue)
@@ -121,8 +147,10 @@ final class HotkeyService {
 
     /// C コールバックから呼ばれる。修飾キーの状態変化を解釈してハンドラを発火する。
     fileprivate func handleFlagsChanged(_ flags: UInt64) {
-        guard let modifier else { return }
-        let isDown = (flags & modifier.deviceMask) != 0
+        guard !modifiers.isEmpty else { return }
+        // 設定したすべての修飾キーが同時に押されている間だけ「押下」とみなす。
+        let combined = HotkeyModifier.combinedMask(modifiers)
+        let isDown = (flags & combined) == combined
         guard isDown != modifierIsDown else { return }
         modifierIsDown = isDown
 
