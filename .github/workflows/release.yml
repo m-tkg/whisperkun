@@ -10,7 +10,9 @@ permissions:
 
 jobs:
   release:
-    runs-on: macos-latest
+    # Whisperkun は macOS 26 SDK 専用 API（FoundationModels / Speech）を使うため
+    # macos-latest（現状 macOS 15）ではビルドできない。Xcode 26 を含む macos-26 を使う。
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v5
 
