@@ -20,8 +20,8 @@ struct RecordingHUDView: View {
             statusIcon
             VStack(alignment: .leading, spacing: 4) {
                 Text(statusLabel)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(statusColor)
                 Text(transcription.liveText.isEmpty ? "…" : transcription.liveText)
                     .font(.title3)
                     .lineLimit(3)
@@ -47,11 +47,25 @@ struct RecordingHUDView: View {
         }
     }
 
+    /// 状態ごとに色を変えて一目で区別できるようにする。
+    private var statusColor: Color {
+        if state.isFormatting { return .purple }
+        switch transcription.phase {
+        case .listening: return .green
+        case .preparing: return .secondary
+        case .failed: return .red
+        case .idle: return .secondary
+        }
+    }
+
     @ViewBuilder
     private var statusIcon: some View {
-        // 整形中は録音フェーズに関わらずスピナーを優先表示する。
+        // 整形中は録音フェーズに関わらず AI 整形アイコンを優先表示する（認識中と区別）。
         if state.isFormatting {
-            ProgressView().controlSize(.small)
+            Image(systemName: "sparkles")
+                .font(.title)
+                .foregroundStyle(.purple)
+                .symbolEffect(.variableColor.iterative, options: .repeating)
         } else {
             switch transcription.phase {
             case .listening:
