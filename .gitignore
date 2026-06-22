@@ -1,0 +1,14 @@
+# Swift / SwiftPM
+.build/
+Package.resolved
+
+# Build artifacts
+*.app/
+*.zip
+default.profraw
+
+# macOS
+.DS_Store
+
+# Claude 一時ファイル
+.claude/tmp/

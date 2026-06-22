@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>Whisperkun</string>
+	<key>CFBundleDisplayName</key>
+	<string>Whisperkun</string>
+	<key>CFBundleIdentifier</key>
+	<string>dev.mtkg.Whisperkun</string>
+	<key>CFBundleExecutable</key>
+	<string>Whisperkun</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>26.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 m-tkg. All rights reserved.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>音声を文字起こしするためにマイクを使用します。</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>発話内容をオンデバイスで文字起こしするために音声認識を使用します。</string>
+</dict>
+</plist>

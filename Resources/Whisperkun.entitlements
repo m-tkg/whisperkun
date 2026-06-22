@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- 他アプリへのペースト/CGEventTap/アクセシビリティ操作のため App Sandbox は無効 -->
+	<key>com.apple.security.app-sandbox</key>
+	<false/>
+	<!-- Hardened Runtime 下でマイクを使うために必要 -->
+	<key>com.apple.security.device.audio-input</key>
+	<true/>
+</dict>
+</plist>
