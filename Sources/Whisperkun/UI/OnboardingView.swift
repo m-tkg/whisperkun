@@ -49,6 +49,8 @@ struct OnboardingView: View {
         }
         .padding(24)
         .frame(width: 460, height: 380)
+        // オンボーディング表示中だけ前面化＋Dock表示する。
+        .background(ForegroundActivation())
     }
 
     @ViewBuilder
