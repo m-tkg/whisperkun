@@ -33,22 +33,53 @@ final class ActivationPolicyController {
 
 /// ウィンドウに載っている間だけ `ActivationPolicyController` を介して Dock 表示＋前面化する
 /// 不可視の AppKit ビュー。SwiftUI の `.background(ForegroundActivation())` で使う。
+///
+/// 設定ウィンドウは SwiftUI が使い回す（閉じても破棄されず再表示される）ため、
+/// `viewDidMoveToWindow` は再オープン時に発火しないことがある。`didBecomeKey` も監視して
+/// 再オープンにも追従する。また、メニューバーのポップオーバー閉鎖や policy 切替の直後に
+/// 前面化が打ち消されないよう、前面化は次の run loop で行う。
 private final class ForegroundActivationView: NSView {
     private var active = false
+    private weak var observed: NSWindow?
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        if let window, !active {
-            active = true
-            ActivationPolicyController.shared.beginForegroundWindow()
-            window.makeKeyAndOrderFront(nil)
-            NotificationCenter.default.addObserver(
-                self, selector: #selector(handleClose),
-                name: NSWindow.willCloseNotification, object: window
-            )
-        } else if window == nil, active {
+        guard let window else {
             // ウィンドウから外れた（閉じた）。
             deactivate()
+            return
+        }
+        observe(window)
+        activate(window)
+    }
+
+    private func observe(_ window: NSWindow) {
+        guard observed !== window else { return }
+        if let observed {
+            NotificationCenter.default.removeObserver(self, name: NSWindow.willCloseNotification, object: observed)
+            NotificationCenter.default.removeObserver(self, name: NSWindow.didBecomeKeyNotification, object: observed)
+        }
+        observed = window
+        NotificationCenter.default.addObserver(self, selector: #selector(handleClose),
+                                               name: NSWindow.willCloseNotification, object: window)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleBecomeKey),
+                                               name: NSWindow.didBecomeKeyNotification, object: window)
+    }
+
+    /// 再オープン等でウィンドウがキーになったら policy を保証する。
+    @objc private func handleBecomeKey() {
+        if let observed { activate(observed) }
+    }
+
+    private func activate(_ window: NSWindow) {
+        if !active {
+            active = true
+            ActivationPolicyController.shared.beginForegroundWindow()
+        }
+        // policy 切替やポップオーバー閉鎖の直後に確実に前面へ出すため次の run loop で実行する。
+        Task { @MainActor in
+            NSApp.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
         }
     }
 
@@ -59,8 +90,11 @@ private final class ForegroundActivationView: NSView {
     private func deactivate() {
         guard active else { return }
         active = false
-        NotificationCenter.default.removeObserver(self, name: NSWindow.willCloseNotification, object: nil)
         ActivationPolicyController.shared.endForegroundWindow()
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 }
 
