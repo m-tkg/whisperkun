@@ -156,9 +156,11 @@ final class DictationCoordinator {
         // 1. 辞書で用語を補正（AIに正しい語を見せるため整形より前）。
         result = dictionary.apply(result, rules: dictionaryRules)
 
-        // 2. AI整形（ワークフロー固有プロンプトがあれば使用）。
+        // 2. AI整形（ワークフロー固有プロンプトがあれば使用）。整形中は HUD にスピナーを表示。
         if aiFormattingEnabled {
+            hud.state.isFormatting = true
             result = await ai.format(result, instructions: activeWorkflow?.instructions)
+            hud.state.isFormatting = false
         }
 
         // 3. スニペット/プレースホルダ展開。
