@@ -79,9 +79,12 @@ final class TranscriptionService {
             let (inputStream, continuation) = AsyncStream.makeStream(of: AnalyzerInput.self)
 
             // マイクのネイティブフォーマットでタップを張り、コールバック内で変換して投入する。
-            // クロージャは MainActor 隔離プロパティを捕捉しないよう、ローカル値のみを参照する。
+            // タップはオーディオのリアルタイムスレッドで呼ばれる。`@Sendable` を付けて
+            // クロージャを非隔離にしないと、@MainActor 隔離と推論されオーディオスレッド上で
+            // 実行時の隔離アサーション（SIGTRAP）でクラッシュする。捕捉する値はいずれも
+            // Sendable（continuation / @unchecked Sendable な bufferConverter）。
             let recordingFormat = engine.inputNode.outputFormat(forBus: 0)
-            engine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: recordingFormat) { buffer, _ in
+            engine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: recordingFormat) { @Sendable buffer, _ in
                 if let converted = try? bufferConverter.convert(buffer) {
                     continuation.yield(AnalyzerInput(buffer: converted))
                 }
