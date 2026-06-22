@@ -4,7 +4,10 @@ import AVFoundation
 ///
 /// SDK 提供の `AnalyzerInputConverter` は macOS 27+ 限定のため、macOS 26 対応として
 /// `AVAudioConverter` で同等の変換を自前で行う。
-final class BufferConverter {
+///
+/// AVAudioEngine のタップ（リアルタイムオーディオスレッド）から直列に呼ばれる前提のため
+/// `@unchecked Sendable`。内部の可変状態（converter）に並行アクセスは無い。
+final class BufferConverter: @unchecked Sendable {
     enum ConversionError: Error {
         case converterUnavailable
         case bufferAllocationFailed
