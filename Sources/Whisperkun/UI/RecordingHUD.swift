@@ -1,9 +1,19 @@
 import AppKit
+import Observation
 import SwiftUI
+
+/// HUD 固有の表示状態（録音以外の進行表示）。AI整形中などに使う。
+@MainActor
+@Observable
+final class HUDState {
+    /// AI整形が進行中か。true の間はスピナーを表示する。
+    var isFormatting = false
+}
 
 /// 録音中に画面下部へ浮かぶフローティングインジケータの内容。
 struct RecordingHUDView: View {
     @Bindable var transcription: TranscriptionService
+    @Bindable var state: HUDState
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -28,6 +38,7 @@ struct RecordingHUDView: View {
     }
 
     private var statusLabel: String {
+        if state.isFormatting { return "AIで整形中" }
         switch transcription.phase {
         case .preparing: return "準備中"
         case .listening: return "認識中"
@@ -38,18 +49,23 @@ struct RecordingHUDView: View {
 
     @ViewBuilder
     private var statusIcon: some View {
-        switch transcription.phase {
-        case .listening:
-            Image(systemName: "waveform")
-                .font(.title)
-                .foregroundStyle(.green)
-                .symbolEffect(.variableColor.iterative, options: .repeating)
-        case .preparing:
+        // 整形中は録音フェーズに関わらずスピナーを優先表示する。
+        if state.isFormatting {
             ProgressView().controlSize(.small)
-        case .failed:
-            Image(systemName: "exclamationmark.triangle.fill").font(.title).foregroundStyle(.red)
-        case .idle:
-            Image(systemName: "mic").font(.title).foregroundStyle(.secondary)
+        } else {
+            switch transcription.phase {
+            case .listening:
+                Image(systemName: "waveform")
+                    .font(.title)
+                    .foregroundStyle(.green)
+                    .symbolEffect(.variableColor.iterative, options: .repeating)
+            case .preparing:
+                ProgressView().controlSize(.small)
+            case .failed:
+                Image(systemName: "exclamationmark.triangle.fill").font(.title).foregroundStyle(.red)
+            case .idle:
+                Image(systemName: "mic").font(.title).foregroundStyle(.secondary)
+            }
         }
     }
 }
@@ -59,10 +75,13 @@ struct RecordingHUDView: View {
 final class HUDController {
     private var panel: NSPanel?
 
+    /// HUD の表示状態。AI整形中フラグなどを保持する（録音状態は TranscriptionService）。
+    let state = HUDState()
+
     func show(_ transcription: TranscriptionService) {
         if panel != nil { return }
 
-        let hosting = NSHostingController(rootView: RecordingHUDView(transcription: transcription))
+        let hosting = NSHostingController(rootView: RecordingHUDView(transcription: transcription, state: state))
         // SwiftUIビューにパネルサイズを追従させない（制約更新ループの回避）。
         hosting.sizingOptions = []
         let panel = NSPanel(
@@ -89,6 +108,7 @@ final class HUDController {
     func hide() {
         panel?.orderOut(nil)
         panel = nil
+        state.isFormatting = false
     }
 
     private func positionAtBottomCenter(_ panel: NSPanel) {
