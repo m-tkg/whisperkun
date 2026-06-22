@@ -48,12 +48,13 @@ struct MenuBarView: View {
     }
 
     private var hotkeyStatusText: String {
-        guard let modifier = appState.settings.hotkeyModifier else {
+        let modifiers = appState.settings.hotkeyModifiers
+        guard !modifiers.isEmpty else {
             return "ホットキー: 未設定（設定 → ホットキーで割り当て）"
         }
         let action = appState.settings.hotkeyMode == .pushToTalk ? "長押しで録音" : "押すたびに開始/停止"
         if appState.dictation.hotkeyInstalled {
-            return "ホットキー: \(modifier.displayName) \(action)"
+            return "ホットキー: \(HotkeyModifier.displayName(for: modifiers)) \(action)"
         }
         return "ホットキー: 未起動（アクセシビリティ許可が必要）"
     }

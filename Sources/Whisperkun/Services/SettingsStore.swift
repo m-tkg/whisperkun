@@ -9,13 +9,14 @@ final class SettingsStore {
     var hotkeyMode: HotkeyMode {
         didSet { defaults.set(hotkeyMode.rawValue, forKey: Keys.hotkeyMode) }
     }
-    /// 録音に使う修飾キー。`nil` は未設定（ホットキー無効。既定）。
-    var hotkeyModifier: HotkeyModifier? {
+    /// 録音に使う修飾キーの組み合わせ。空は未設定（ホットキー無効。既定）。
+    /// 複数指定時は「すべて同時押し」で発火する。
+    var hotkeyModifiers: Set<HotkeyModifier> {
         didSet {
-            if let value = hotkeyModifier {
-                defaults.set(value.rawValue, forKey: Keys.hotkeyModifier)
+            if hotkeyModifiers.isEmpty {
+                defaults.removeObject(forKey: Keys.hotkeyModifiers)
             } else {
-                defaults.removeObject(forKey: Keys.hotkeyModifier)
+                defaults.set(hotkeyModifiers.map(\.rawValue), forKey: Keys.hotkeyModifiers)
             }
         }
     }
@@ -30,7 +31,8 @@ final class SettingsStore {
 
     private enum Keys {
         static let hotkeyMode = "hotkeyMode"
-        static let hotkeyModifier = "hotkeyModifier"
+        static let hotkeyModifier = "hotkeyModifier"     // 旧: 単一修飾キー（移行用）
+        static let hotkeyModifiers = "hotkeyModifiers"   // 新: 修飾キー集合
         static let defaultLocaleID = "defaultLocaleID"
         static let aiFormattingEnabled = "aiFormattingEnabled"
     }
@@ -38,9 +40,20 @@ final class SettingsStore {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         self.hotkeyMode = (defaults.string(forKey: Keys.hotkeyMode)).flatMap(HotkeyMode.init) ?? .pushToTalk
-        // 既定は未設定（nil）。保存済みの値があればそれを使う。
-        self.hotkeyModifier = (defaults.string(forKey: Keys.hotkeyModifier)).flatMap(HotkeyModifier.init(rawValue:))
+        self.hotkeyModifiers = Self.loadModifiers(from: defaults)
         self.defaultLocaleID = defaults.string(forKey: Keys.defaultLocaleID) ?? "ja-JP"
         self.aiFormattingEnabled = defaults.object(forKey: Keys.aiFormattingEnabled) as? Bool ?? true
+    }
+
+    /// 修飾キー集合を読み込む。新キーが無ければ旧・単一キー設定から移行する。既定は空（未設定）。
+    private static func loadModifiers(from defaults: UserDefaults) -> Set<HotkeyModifier> {
+        if let raws = defaults.stringArray(forKey: Keys.hotkeyModifiers) {
+            return Set(raws.compactMap(HotkeyModifier.init(rawValue:)))
+        }
+        // 旧バージョンの単一修飾キー設定を移行。
+        if let single = defaults.string(forKey: Keys.hotkeyModifier).flatMap(HotkeyModifier.init(rawValue:)) {
+            return [single]
+        }
+        return []
     }
 }
