@@ -47,7 +47,12 @@ final class PermissionsManager {
     /// 音声認識権限を要求する。
     func requestSpeechRecognition() async {
         let status = await withCheckedContinuation { (continuation: CheckedContinuation<SFSpeechRecognizerAuthorizationStatus, Never>) in
-            SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0) }
+            // 完了ハンドラは TCC のバックグラウンドキューで呼ばれる。@MainActor 隔離と
+            // 推論されると実行時の隔離アサーション(SIGTRAP)でクラッシュするため、
+            // @Sendable で非隔離にする。continuation/status はいずれも Sendable。
+            SFSpeechRecognizer.requestAuthorization { @Sendable status in
+                continuation.resume(returning: status)
+            }
         }
         speechRecognition = Self.map(status)
     }
