@@ -124,6 +124,11 @@ final class DictationCoordinator {
         // ロケールはワークフロー指定優先、無ければ既定。
         transcription.locale = Locale(identifier: activeWorkflow?.localeID ?? defaultLocaleID)
 
+        // AI整形を使うなら、発話中にモデルを読み込んでおき確定後のレイテンシを下げる。
+        if aiFormattingEnabled {
+            ai.prewarm(instructions: activeWorkflow?.instructions)
+        }
+
         hud.show(transcription)
         Task { await transcription.start() }
     }
