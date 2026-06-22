@@ -25,5 +25,7 @@ struct SettingsView: View {
                 .tabItem { Label("履歴", systemImage: "clock") }
         }
         .frame(width: 560, height: 420)
+        // 設定ウィンドウ表示中だけ前面化＋Dock表示する。
+        .background(ForegroundActivation())
     }
 }
