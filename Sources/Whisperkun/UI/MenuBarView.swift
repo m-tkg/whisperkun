@@ -35,11 +35,34 @@ struct MenuBarView: View {
             Button("権限の状態を再確認") { appState.permissions.refresh() }
             SettingsLink { Text("設定…") }
                 .keyboardShortcut(",")
+
+            Divider()
+
+            Button(updateMenuTitle) { appState.checkForUpdates() }
+                .disabled(appState.isUpdating)
             Button("Whisperkun を終了") { NSApplication.shared.terminate(nil) }
                 .keyboardShortcut("q")
         }
         .padding(8)
         .frame(width: 260)
+    }
+
+    private var hotkeyStatusText: String {
+        guard let modifier = appState.settings.hotkeyModifier else {
+            return "ホットキー: 未設定（設定 → ホットキーで割り当て）"
+        }
+        let action = appState.settings.hotkeyMode == .pushToTalk ? "長押しで録音" : "押すたびに開始/停止"
+        if appState.dictation.hotkeyInstalled {
+            return "ホットキー: \(modifier.displayName) \(action)"
+        }
+        return "ホットキー: 未起動（アクセシビリティ許可が必要）"
+    }
+
+    private var updateMenuTitle: String {
+        if let release = appState.availableRelease {
+            return "アップデート \(release.tagName) をインストール…"
+        }
+        return "アップデートを確認…"
     }
 
     @ViewBuilder
@@ -69,9 +92,7 @@ struct MenuBarView: View {
                 .lineLimit(4)
         }
 
-        Text(appState.dictation.hotkeyInstalled
-             ? "ホットキー: 右Command 長押しで録音"
-             : "ホットキー: 未起動（アクセシビリティ許可が必要）")
+        Text(hotkeyStatusText)
             .font(.caption2)
             .foregroundStyle(.secondary)
 

@@ -17,17 +17,30 @@ struct HotkeySettingsView: View {
             }
 
             Section("修飾キー") {
-                Picker("キー", selection: Binding(
-                    get: { appState.settings.hotkeyModifier },
-                    set: { appState.settings.hotkeyModifier = $0; appState.applySettings() }
-                )) {
-                    ForEach(HotkeyModifier.allCases, id: \.self) { modifier in
-                        Text(modifier.displayName).tag(modifier)
+                HStack {
+                    HotkeyRecorder(modifier: Binding(
+                        get: { appState.settings.hotkeyModifier },
+                        set: { appState.settings.hotkeyModifier = $0; appState.applySettings() }
+                    ))
+                    .frame(width: 280, height: 28)
+
+                    Button {
+                        appState.settings.hotkeyModifier = nil
+                        appState.applySettings()
+                    } label: {
+                        Image(systemName: "xmark.circle")
                     }
+                    .buttonStyle(.borderless)
+                    .help("ホットキーをクリア（未設定）")
+                    .disabled(appState.settings.hotkeyModifier == nil)
                 }
+
+                Text("ボックスをクリックしてから、使いたい右側の修飾キーを押してください。未設定の間はホットキーで録音できません。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
-            if !appState.dictation.hotkeyInstalled {
+            if appState.settings.hotkeyModifier != nil, !appState.dictation.hotkeyInstalled {
                 Section {
                     Text("ホットキーが未起動です。アクセシビリティ権限を許可してください。")
                         .font(.caption)

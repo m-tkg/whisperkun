@@ -9,8 +9,15 @@ final class SettingsStore {
     var hotkeyMode: HotkeyMode {
         didSet { defaults.set(hotkeyMode.rawValue, forKey: Keys.hotkeyMode) }
     }
-    var hotkeyModifier: HotkeyModifier {
-        didSet { defaults.set(hotkeyModifier.rawValue, forKey: Keys.hotkeyModifier) }
+    /// 録音に使う修飾キー。`nil` は未設定（ホットキー無効。既定）。
+    var hotkeyModifier: HotkeyModifier? {
+        didSet {
+            if let value = hotkeyModifier {
+                defaults.set(value.rawValue, forKey: Keys.hotkeyModifier)
+            } else {
+                defaults.removeObject(forKey: Keys.hotkeyModifier)
+            }
+        }
     }
     var defaultLocaleID: String {
         didSet { defaults.set(defaultLocaleID, forKey: Keys.defaultLocaleID) }
@@ -31,7 +38,8 @@ final class SettingsStore {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         self.hotkeyMode = (defaults.string(forKey: Keys.hotkeyMode)).flatMap(HotkeyMode.init) ?? .pushToTalk
-        self.hotkeyModifier = (defaults.string(forKey: Keys.hotkeyModifier)).flatMap(HotkeyModifier.init) ?? .rightCommand
+        // 既定は未設定（nil）。保存済みの値があればそれを使う。
+        self.hotkeyModifier = (defaults.string(forKey: Keys.hotkeyModifier)).flatMap(HotkeyModifier.init(rawValue:))
         self.defaultLocaleID = defaults.string(forKey: Keys.defaultLocaleID) ?? "ja-JP"
         self.aiFormattingEnabled = defaults.object(forKey: Keys.aiFormattingEnabled) as? Bool ?? true
     }

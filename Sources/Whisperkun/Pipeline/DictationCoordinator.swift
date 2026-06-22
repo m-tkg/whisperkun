@@ -81,11 +81,21 @@ final class DictationCoordinator {
     var hotkeyInstalled: Bool { hotkey.isInstalled }
     var isRecording: Bool { transcription.isRunning }
 
-    /// ホットキーの方式と修飾キーを反映する。
-    func applyHotkeySettings(mode: HotkeyMode, modifier: HotkeyModifier) {
+    /// ホットキーの方式と修飾キーを反映する。`modifier` が nil なら監視を停止する。
+    /// （設定がある場合の監視開始は権限を知る AppState 側で行う。）
+    func applyHotkeySettings(mode: HotkeyMode, modifier: HotkeyModifier?) {
         hotkey.mode = mode
         hotkey.modifier = modifier
+        if modifier == nil {
+            hotkey.uninstall()
+        }
     }
+
+    /// ホットキーが設定済みか（修飾キーが割り当てられているか）。
+    var hotkeyConfigured: Bool { hotkey.modifier != nil }
+
+    /// 現在割り当てられている修飾キー（未設定なら nil）。
+    var hotkeyModifier: HotkeyModifier? { hotkey.modifier }
 
     /// 手動トグル（メニューバーから / ホットキーのトグル方式と等価）。
     func toggle() {
