@@ -35,7 +35,7 @@ struct HotkeySettingsView: View {
                     .disabled(appState.settings.hotkeyModifiers.isEmpty)
                 }
 
-                Text("ボックスをクリックしてから、使いたい右側の修飾キーを押してください（複数同時押しも可。すべて離すと確定）。未設定の間はホットキーで録音できません。")
+                Text("ボックスをクリックしてから、使いたい修飾キーを押してください（左右どちらも・複数同時押しも可。押している間は表示され、すべて離すと確定）。未設定の間はホットキーで録音できません。左側のキー（左 Command など）はコピー/貼り付け等の通常操作と衝突しやすいので注意。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

@@ -9,70 +9,97 @@ enum HotkeyMode: String, CaseIterable, Codable {
 
 /// 監視対象の修飾キー（左右を区別するため device-dependent マスクで判定する）。
 enum HotkeyModifier: String, CaseIterable, Codable {
-    case rightCommand
-    case rightOption
+    case leftControl
     case rightControl
+    case leftOption
+    case rightOption
+    case leftShift
     case rightShift
+    case leftCommand
+    case rightCommand
 
-    /// CGEventFlags 内の device-dependent マスク（IOKit の NX_DEVICER*KEYMASK）。
+    /// CGEventFlags 内の device-dependent マスク（IOKit の NX_DEVICEL*/R*KEYMASK）。
     var deviceMask: UInt64 {
         switch self {
+        case .leftControl: return 0x0000_0001
+        case .leftShift: return 0x0000_0002
+        case .rightShift: return 0x0000_0004
+        case .leftCommand: return 0x0000_0008
         case .rightCommand: return 0x0000_0010
+        case .leftOption: return 0x0000_0020
         case .rightOption: return 0x0000_0040
         case .rightControl: return 0x0000_2000
-        case .rightShift: return 0x0000_0004
         }
     }
 
     var displayName: String {
         switch self {
-        case .rightCommand: return "右 Command"
-        case .rightOption: return "右 Option"
+        case .leftControl: return "左 Control"
         case .rightControl: return "右 Control"
+        case .leftOption: return "左 Option"
+        case .rightOption: return "右 Option"
+        case .leftShift: return "左 Shift"
         case .rightShift: return "右 Shift"
+        case .leftCommand: return "左 Command"
+        case .rightCommand: return "右 Command"
         }
     }
 
-    /// 記号表記（レコーダ表示用）。
-    var symbol: String {
+    /// グリフ記号（⌃⌥⇧⌘）。左右の区別は付かないため表示は displayName を優先する。
+    var glyph: String {
         switch self {
-        case .rightCommand: return "⌘"
-        case .rightOption: return "⌥"
-        case .rightControl: return "⌃"
-        case .rightShift: return "⇧"
+        case .leftControl, .rightControl: return "⌃"
+        case .leftOption, .rightOption: return "⌥"
+        case .leftShift, .rightShift: return "⇧"
+        case .leftCommand, .rightCommand: return "⌘"
         }
     }
 
-    /// `flagsChanged` イベントの仮想キーコードから右側修飾キーを判定する。
-    /// 左側のキーや非修飾キーは nil。
+    /// 左側の修飾キーか。
+    var isLeft: Bool {
+        switch self {
+        case .leftControl, .leftOption, .leftShift, .leftCommand: return true
+        default: return false
+        }
+    }
+
+    /// `flagsChanged` イベントの仮想キーコードから修飾キーを判定する。非修飾キーは nil。
     init?(keyCode: UInt16) {
         switch keyCode {
         case 54: self = .rightCommand
+        case 55: self = .leftCommand
+        case 56: self = .leftShift
+        case 58: self = .leftOption
+        case 59: self = .leftControl
+        case 60: self = .rightShift
         case 61: self = .rightOption
         case 62: self = .rightControl
-        case 60: self = .rightShift
         default: return nil
         }
     }
 
-    /// 表示順（⌃⌥⇧⌘ の慣習順）。
+    /// 表示順（⌃⌥⇧⌘ の慣習順。同種は左→右）。
     var sortOrder: Int {
         switch self {
-        case .rightControl: return 0
-        case .rightOption: return 1
-        case .rightShift: return 2
-        case .rightCommand: return 3
+        case .leftControl: return 0
+        case .rightControl: return 1
+        case .leftOption: return 2
+        case .rightOption: return 3
+        case .leftShift: return 4
+        case .rightShift: return 5
+        case .leftCommand: return 6
+        case .rightCommand: return 7
         }
     }
 
-    /// 修飾キー集合の表示名（例: "右 Shift + 右 Command"）。空なら空文字。
+    /// 修飾キー集合の表示名（例: "左 Shift + 右 Command"）。空なら空文字。
     static func displayName(for set: Set<HotkeyModifier>) -> String {
         set.sorted { $0.sortOrder < $1.sortOrder }.map(\.displayName).joined(separator: " + ")
     }
 
-    /// 修飾キー集合の記号表記（例: "⇧⌘"）。
-    static func symbols(for set: Set<HotkeyModifier>) -> String {
-        set.sorted { $0.sortOrder < $1.sortOrder }.map(\.symbol).joined()
+    /// 修飾キー集合のグリフ表記（例: "⇧⌘"。左右は区別されない）。
+    static func glyphs(for set: Set<HotkeyModifier>) -> String {
+        set.sorted { $0.sortOrder < $1.sortOrder }.map(\.glyph).joined()
     }
 
     /// 集合の device マスクの論理和。
