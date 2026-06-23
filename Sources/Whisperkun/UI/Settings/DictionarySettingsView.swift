@@ -22,10 +22,26 @@ struct DictionarySettingsView: View {
             }
 
             Table(entries) {
-                TableColumn("変換元", value: \.from)
-                TableColumn("変換先", value: \.to)
+                TableColumn("変換元") { entry in
+                    TextField("変換元", text: Binding(
+                        get: { entry.from },
+                        set: { entry.from = $0; try? context.save() }
+                    ))
+                    .textFieldStyle(.plain)
+                }
+                TableColumn("変換先") { entry in
+                    TextField("変換先", text: Binding(
+                        get: { entry.to },
+                        set: { entry.to = $0; try? context.save() }
+                    ))
+                    .textFieldStyle(.plain)
+                }
                 TableColumn("大小区別") { entry in
-                    Text(entry.caseSensitive ? "する" : "しない")
+                    Toggle("", isOn: Binding(
+                        get: { entry.caseSensitive },
+                        set: { entry.caseSensitive = $0; try? context.save() }
+                    ))
+                    .labelsHidden()
                 }
                 TableColumn("") { entry in
                     Button(role: .destructive) {
