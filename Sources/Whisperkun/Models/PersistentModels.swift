@@ -22,42 +22,6 @@ final class DictionaryEntry {
     }
 }
 
-/// スニペット（`{{key}}` → 展開後テキスト）。
-@Model
-final class Snippet {
-    var key: String
-    var value: String
-    var createdAt: Date
-
-    init(key: String, value: String, createdAt: Date = .now) {
-        self.key = key
-        self.value = value
-        self.createdAt = createdAt
-    }
-}
-
-/// アプリ別ワークフロー。
-@Model
-final class Workflow {
-    var name: String
-    var bundleIDs: [String]
-    var instructions: String?
-    var localeID: String?
-    var createdAt: Date
-
-    init(name: String, bundleIDs: [String] = [], instructions: String? = nil, localeID: String? = nil, createdAt: Date = .now) {
-        self.name = name
-        self.bundleIDs = bundleIDs
-        self.instructions = instructions
-        self.localeID = localeID
-        self.createdAt = createdAt
-    }
-
-    var rule: WorkflowRule {
-        WorkflowRule(name: name, bundleIDs: bundleIDs, instructions: instructions, localeID: localeID)
-    }
-}
-
 /// 文字起こし履歴の1件。
 @Model
 final class TranscriptionRecord {

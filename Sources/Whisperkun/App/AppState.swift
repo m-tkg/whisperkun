@@ -27,7 +27,7 @@ final class AppState {
     init() {
         do {
             modelContainer = try ModelContainer(
-                for: DictionaryEntry.self, Snippet.self, Workflow.self, TranscriptionRecord.self
+                for: DictionaryEntry.self, TranscriptionRecord.self
             )
         } catch {
             fatalError("SwiftData コンテナの初期化に失敗: \(error)")
@@ -160,17 +160,7 @@ final class AppState {
     private func fetchPipelineData() -> PipelineData {
         let context = modelContainer.mainContext
         let entries = (try? context.fetch(FetchDescriptor<DictionaryEntry>())) ?? []
-        let snippets = (try? context.fetch(FetchDescriptor<Snippet>())) ?? []
-        let workflows = (try? context.fetch(FetchDescriptor<Workflow>())) ?? []
-
-        var snippetMap: [String: String] = [:]
-        for snippet in snippets { snippetMap[snippet.key] = snippet.value }
-
-        return PipelineData(
-            dictionaryRules: entries.map(\.rule),
-            snippets: snippetMap,
-            workflows: workflows.map(\.rule)
-        )
+        return PipelineData(dictionaryRules: entries.map(\.rule))
     }
 
     private func saveHistory(text: String, bundleID: String?) {
