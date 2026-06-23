@@ -54,7 +54,7 @@ struct OnboardingView: View {
     }
 
     @ViewBuilder
-    private func step(number: Int, title: String, detail: String, granted: Bool, action: @escaping () -> Void) -> some View {
+    private func step(number: Int, title: LocalizedStringKey, detail: LocalizedStringKey, granted: Bool, action: @escaping () -> Void) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: granted ? "checkmark.circle.fill" : "\(number).circle")
                 .font(.title2)
