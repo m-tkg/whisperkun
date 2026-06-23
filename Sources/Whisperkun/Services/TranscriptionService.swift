@@ -126,14 +126,39 @@ final class TranscriptionService {
         engine.stop()
         inputContinuation?.finish()
 
-        // 末尾まで解析を確定させてから結果購読タスクの完了を待つ。
-        try? await analyzer?.finalizeAndFinishThroughEndOfInput()
-        await resultsTask?.value
+        // 末尾まで解析を確定させ結果購読の完了を待つ。ただし Speech 側で稀に確定処理が
+        // 返らず「認識中」のまま固着するため、タイムアウトで打ち切る。
+        let finished = await finishWithTimeout(seconds: 3)
 
-        let result = String(finalizedText.characters)
+        // 正常確定なら確定テキスト、タイムアウト時は暫定込みの表示テキストで代替する。
+        let finalized = String(finalizedText.characters)
+        let result = finished ? finalized : (finalized.isEmpty ? liveText : finalized)
+
         cleanup()
         phase = .idle
         return result
+    }
+
+    /// 確定処理（finalize＋結果購読の完了）を待つ。期限内に終われば true、超過なら false。
+    /// 超過時は残りの処理を諦めて呼び出し元を進める（固着防止）。
+    private func finishWithTimeout(seconds: Double) async -> Bool {
+        // self を跨がせないよう、必要な値はローカルに取り出してから渡す。
+        let analyzer = self.analyzer
+        let resultsTask = self.resultsTask
+        return await withTaskGroup(of: Bool.self) { group in
+            group.addTask {
+                try? await analyzer?.finalizeAndFinishThroughEndOfInput()
+                await resultsTask?.value
+                return true
+            }
+            group.addTask {
+                try? await Task.sleep(for: .seconds(seconds))
+                return false
+            }
+            let first = await group.next() ?? false
+            group.cancelAll()
+            return first
+        }
     }
 
     private func apply(text: AttributedString, isFinal: Bool) {
