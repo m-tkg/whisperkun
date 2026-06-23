@@ -10,6 +10,8 @@
 	<string>dev.mtkg.Whisperkun</string>
 	<key>CFBundleExecutable</key>
 	<string>Whisperkun</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
