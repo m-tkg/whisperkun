@@ -45,6 +45,9 @@
 "利用不可: %@" = "Unavailable: %@";
 "文字起こし" = "Transcription";
 "既定の言語" = "Default Language";
+"起動" = "Launch";
+"ログイン時に自動起動する" = "Launch at login";
+"設定に失敗しました: %@" = "Failed to apply the setting: %@";
 
 /* AI availability reasons */
 "この端末は Apple Intelligence 非対応です" = "This device doesn’t support Apple Intelligence.";
