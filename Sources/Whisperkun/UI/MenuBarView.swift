@@ -16,8 +16,21 @@ struct MenuBarView: View {
         // アプリをアクティブ化してから設定を開く（メニューバー常駐＝accessory 対策）。
         Button("設定…") { openSettingsAndActivate() }
             .keyboardShortcut(",")
+        Button(updateMenuTitle) { appState.checkForUpdates() }
+            .disabled(appState.isUpdating)
+
+        Divider()
+
         Button("Whisperkun を終了") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")
+    }
+
+    /// 新バージョンがあればインストール、なければ確認のラベル。
+    private var updateMenuTitle: String {
+        if let release = appState.availableRelease {
+            return "アップデート \(release.tagName) をインストール…"
+        }
+        return "アップデートを確認"
     }
 
     private func openSettingsAndActivate() {

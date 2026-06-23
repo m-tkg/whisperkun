@@ -37,27 +37,8 @@ struct GeneralSettingsView: View {
                     }
                 }
             }
-
-            Section("アップデート") {
-                Button(updateButtonTitle) { appState.checkForUpdates() }
-                    .disabled(appState.isUpdating)
-                Text("現在のバージョン: \(appVersion)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
         }
         .formStyle(.grouped)
         .padding()
-    }
-
-    private var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
-    }
-
-    private var updateButtonTitle: String {
-        if let release = appState.availableRelease {
-            return "アップデート \(release.tagName) をインストール…"
-        }
-        return "アップデートを確認"
     }
 }
