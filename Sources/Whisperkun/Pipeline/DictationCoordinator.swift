@@ -6,15 +6,12 @@ import WhisperkunCore
 /// パイプラインが後処理に使うデータ一式（SwiftDataから供給）。
 struct PipelineData: Sendable {
     var dictionaryRules: [DictionaryRule] = []
-    var snippets: [String: String] = [:]
-    var workflows: [WorkflowRule] = []
 }
 
 /// ディクテーションの一連の流れを統括する。
 ///
 /// ホットキー（または手動トグル）→ 録音/文字起こし → HUD表示 → 確定テキストの挿入、
-/// という流れを束ねる。M4でAI整形、M5で辞書/スニペット/ワークフローを
-/// 確定〜挿入の間に差し込んでいく。
+/// という流れを束ねる。確定〜挿入の間に辞書置換とAI整形を差し込む。
 @MainActor
 @Observable
 final class DictationCoordinator {
@@ -24,13 +21,11 @@ final class DictationCoordinator {
     private let hud: HUDController
     private let hotkey: HotkeyService
     private let dictionary = DictionaryService()
-    private let snippetService = SnippetService()
-    private let workflowService = WorkflowService()
 
     /// AI整形を行うか（ユーザー設定。既定オン）。
     var aiFormattingEnabled = true
 
-    /// ワークフロー指定が無いときの既定ロケール。
+    /// 文字起こしの既定ロケール。
     var defaultLocaleID = "ja-JP"
 
     /// 録音開始時に SwiftData から最新データを取得するためのプロバイダ。
@@ -41,12 +36,9 @@ final class DictationCoordinator {
 
     /// 後処理に使うデータ（begin時に loadPipelineData で更新）。
     private var dictionaryRules: [DictionaryRule] = []
-    private var snippets: [String: String] = [:]
-    private var workflows: [WorkflowRule] = []
 
-    /// 録音開始時に確定したターゲット情報。
+    /// 録音開始時に確定した前面アプリ（履歴保存用）。
     private var targetBundleID: String?
-    private var activeWorkflow: WorkflowRule?
 
     /// 確定テキストの挿入中など、停止処理が進行中かどうか。
     private(set) var isFinishing = false
@@ -109,24 +101,20 @@ final class DictationCoordinator {
     private func begin() {
         guard !transcription.isRunning, !isFinishing else { return }
 
-        // 最新の辞書/スニペット/ワークフローを取り込む。
+        // 最新の辞書を取り込む。
         if let data = loadPipelineData?() {
             dictionaryRules = data.dictionaryRules
-            snippets = data.snippets
-            workflows = data.workflows
         }
 
-        // 録音開始時点の前面アプリを確定し、対応ワークフローを選ぶ。
+        // 録音開始時点の前面アプリを確定（履歴保存用）。
         // 自分（メニュー/HUD）は非アクティブ化のため前面に出ず、ターゲットは維持される。
         targetBundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-        activeWorkflow = workflowService.select(for: targetBundleID, from: workflows)
 
-        // ロケールはワークフロー指定優先、無ければ既定。
-        transcription.locale = Locale(identifier: activeWorkflow?.localeID ?? defaultLocaleID)
+        transcription.locale = Locale(identifier: defaultLocaleID)
 
         // AI整形を使うなら、発話中にモデルを読み込んでおき確定後のレイテンシを下げる。
         if aiFormattingEnabled {
-            ai.prewarm(instructions: activeWorkflow?.instructions)
+            ai.prewarm()
         }
 
         hud.show(transcription)
@@ -148,7 +136,7 @@ final class DictationCoordinator {
         }
     }
 
-    /// 確定テキストの後処理パイプライン: 辞書置換 → AI整形 → スニペット展開。
+    /// 確定テキストの後処理パイプライン: 辞書置換 → AI整形。
     private func process(_ text: String) async -> String {
         var result = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !result.isEmpty else { return "" }
@@ -156,15 +144,12 @@ final class DictationCoordinator {
         // 1. 辞書で用語を補正（AIに正しい語を見せるため整形より前）。
         result = dictionary.apply(result, rules: dictionaryRules)
 
-        // 2. AI整形（ワークフロー固有プロンプトがあれば使用）。整形中は HUD にスピナーを表示。
+        // 2. AI整形（既定の軽整形）。整形中は HUD にスピナーを表示。
         if aiFormattingEnabled {
             hud.state.isFormatting = true
-            result = await ai.format(result, instructions: activeWorkflow?.instructions)
+            result = await ai.format(result)
             hud.state.isFormatting = false
         }
-
-        // 3. スニペット/プレースホルダ展開。
-        result = snippetService.expand(result, snippets: snippets, now: Date())
 
         return result
     }
