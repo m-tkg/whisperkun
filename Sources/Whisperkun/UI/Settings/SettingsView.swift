@@ -18,12 +18,6 @@ struct SettingsView: View {
             DictionarySettingsView()
                 .tabItem { Label("辞書", systemImage: "character.book.closed") }
 
-            SnippetsSettingsView()
-                .tabItem { Label("スニペット", systemImage: "text.badge.plus") }
-
-            WorkflowsSettingsView()
-                .tabItem { Label("ワークフロー", systemImage: "flowchart") }
-
             HistoryView()
                 .tabItem { Label("履歴", systemImage: "clock") }
         }
