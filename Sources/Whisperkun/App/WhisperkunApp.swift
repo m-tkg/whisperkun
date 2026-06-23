@@ -11,9 +11,12 @@ struct WhisperkunApp: App {
     }
 
     /// メニューバー用アイコン（アプリアイコンと同じ画像）。バンドルに無ければ nil。
+    /// テンプレート画像にして、メニューバーの明暗に追従し白黒反転表示する
+    /// （明るいメニューバーでは黒、暗いメニューバーでは白）。
     private static let menuBarImage: NSImage? = {
         guard let image = NSImage(named: "MenuBarIcon") else { return nil }
         image.size = NSSize(width: 18, height: 18)
+        image.isTemplate = true
         return image
     }()
 
@@ -37,7 +40,8 @@ struct WhisperkunApp: App {
     @ViewBuilder
     private var menuBarLabel: some View {
         if let image = Self.menuBarImage {
-            let icon = Image(nsImage: image).renderingMode(.original)
+            // テンプレートとして描画し、メニューバーの明暗に追従させる（白黒反転）。
+            let icon = Image(nsImage: image).renderingMode(.template)
             if isLocalBuild {
                 HStack(spacing: 3) { icon; Text("ローカル") }
             } else {
