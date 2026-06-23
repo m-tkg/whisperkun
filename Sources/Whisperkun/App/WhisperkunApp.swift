@@ -24,7 +24,7 @@ struct WhisperkunApp: App {
         } label: {
             menuBarLabel
         }
-        .menuBarExtraStyle(.window)
+        .menuBarExtraStyle(.menu)
 
         Settings {
             SettingsView(appState: appState)
