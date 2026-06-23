@@ -14,6 +14,8 @@ final class HUDState {
 struct RecordingHUDView: View {
     @Bindable var transcription: TranscriptionService
     @Bindable var state: HUDState
+    /// 中止ボタンが押されたとき（録音を強制終了して破棄）。
+    var onCancel: () -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -35,6 +37,16 @@ struct RecordingHUDView: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .strokeBorder(.white.opacity(0.1))
         )
+        .overlay(alignment: .topTrailing) {
+            Button(action: onCancel) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .help("録音を中止")
+            .padding(8)
+        }
     }
 
     private var statusLabel: String {
@@ -92,10 +104,17 @@ final class HUDController {
     /// HUD の表示状態。AI整形中フラグなどを保持する（録音状態は TranscriptionService）。
     let state = HUDState()
 
+    /// 中止ボタンが押されたときの処理（DictationCoordinator が設定）。
+    var onCancel: (() -> Void)?
+
     func show(_ transcription: TranscriptionService) {
         if panel != nil { return }
 
-        let hosting = NSHostingController(rootView: RecordingHUDView(transcription: transcription, state: state))
+        let hosting = NSHostingController(rootView: RecordingHUDView(
+            transcription: transcription,
+            state: state,
+            onCancel: { [weak self] in self?.onCancel?() }
+        ))
         // SwiftUIビューにパネルサイズを追従させない（制約更新ループの回避）。
         hosting.sizingOptions = []
         let panel = NSPanel(

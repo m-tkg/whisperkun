@@ -65,6 +65,19 @@ final class DictationCoordinator {
 
         hotkey.onStart = { [weak self] in self?.begin() }
         hotkey.onStop = { [weak self] in self?.end() }
+        hud.onCancel = { [weak self] in self?.cancel() }
+    }
+
+    /// HUD の中止ボタンから呼ぶ。録音を強制停止し、確定テキストは破棄して状態をリセットする。
+    func cancel() {
+        isActive = false
+        Task {
+            // 開始処理の完了を待ってから停止（end と同様に競合を避ける）。確定テキストは挿入しない。
+            await startTask?.value
+            _ = await transcription.stop()
+            hud.hide()
+            isFinishing = false
+        }
     }
 
     /// AI整形が実際に利用可能か（設定オン かつ モデル利用可）。
