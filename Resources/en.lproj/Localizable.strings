@@ -65,6 +65,10 @@
 "する" = "Yes";
 "しない" = "No";
 "追加" = "Add";
+"エクスポート" = "Export";
+"インポート" = "Import";
+"インポートに失敗しました" = "Import failed";
+"ファイルの読み込みまたは解析に失敗しました。" = "Failed to read or parse the file.";
 
 /* History */
 "文字起こし履歴" = "Transcription History";
