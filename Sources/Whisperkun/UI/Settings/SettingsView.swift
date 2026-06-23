@@ -9,6 +9,9 @@ struct SettingsView: View {
             GeneralSettingsView(appState: appState)
                 .tabItem { Label("一般", systemImage: "gearshape") }
 
+            PermissionsSettingsView(appState: appState)
+                .tabItem { Label("権限", systemImage: "lock.shield") }
+
             HotkeySettingsView(appState: appState)
                 .tabItem { Label("ホットキー", systemImage: "keyboard") }
 
