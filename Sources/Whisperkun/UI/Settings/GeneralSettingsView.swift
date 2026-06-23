@@ -3,6 +3,12 @@ import SwiftUI
 struct GeneralSettingsView: View {
     @Bindable var appState: AppState
 
+    /// ログイン項目トグルの表示状態。システム（`SMAppService`）を真実の源とし、
+    /// 操作のたびに読み直すためのローカルキャッシュ。
+    @State private var launchAtLogin = LaunchAtLoginService.isEnabled
+    /// 登録/解除に失敗したときのメッセージ。
+    @State private var launchAtLoginError: String?
+
     /// 文字起こしの選択肢（よく使う言語）。
     private let locales: [(id: String, label: String)] = [
         ("ja-JP", "日本語"),
@@ -13,6 +19,19 @@ struct GeneralSettingsView: View {
 
     var body: some View {
         Form {
+            Section("起動") {
+                Toggle("ログイン時に自動起動する", isOn: Binding(
+                    get: { launchAtLogin },
+                    set: { setLaunchAtLogin($0) }
+                ))
+
+                if let error = launchAtLoginError {
+                    Text("設定に失敗しました: \(error)")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+            }
+
             Section("AI整形") {
                 Toggle("Foundation Models で整形する", isOn: Binding(
                     get: { appState.settings.aiFormattingEnabled },
@@ -40,5 +59,18 @@ struct GeneralSettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+        .onAppear { launchAtLogin = LaunchAtLoginService.isEnabled }
+    }
+
+    /// ログイン項目の登録/解除を行い、結果でトグルとエラー表示を更新する。
+    private func setLaunchAtLogin(_ enabled: Bool) {
+        do {
+            try LaunchAtLoginService.setEnabled(enabled)
+            launchAtLoginError = nil
+        } catch {
+            launchAtLoginError = error.localizedDescription
+        }
+        // システム側の実際の状態に合わせて表示を確定する。
+        launchAtLogin = LaunchAtLoginService.isEnabled
     }
 }
