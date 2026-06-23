@@ -123,3 +123,6 @@
 "リリース情報の解析に失敗しました。" = "Failed to parse release info.";
 "リリースに zip アセットが見つかりませんでした。" = "No zip asset was found in the release.";
 "ダウンロードに失敗しました（HTTP %lld）。" = "Download failed (HTTP %lld).";
+
+/* HUD cancel */
+"録音を中止" = "Cancel recording";

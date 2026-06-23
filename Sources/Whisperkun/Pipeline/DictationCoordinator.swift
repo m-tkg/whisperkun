@@ -40,6 +40,13 @@ final class DictationCoordinator {
     /// 録音開始時に確定した前面アプリ（履歴保存用）。
     private var targetBundleID: String?
 
+    /// 録音セッションが開始済みか（begin/end を同期的に判定するためのフラグ）。
+    /// transcription.phase は非同期に更新されるため、それに依存せずここで管理する。
+    private var isActive = false
+
+    /// 開始処理（transcription.start）のタスク。停止時に完了を待ち合わせて競合を防ぐ。
+    private var startTask: Task<Void, Never>?
+
     /// 確定テキストの挿入中など、停止処理が進行中かどうか。
     private(set) var isFinishing = false
 
@@ -58,6 +65,19 @@ final class DictationCoordinator {
 
         hotkey.onStart = { [weak self] in self?.begin() }
         hotkey.onStop = { [weak self] in self?.end() }
+        hud.onCancel = { [weak self] in self?.cancel() }
+    }
+
+    /// HUD の中止ボタンから呼ぶ。録音を強制停止し、確定テキストは破棄して状態をリセットする。
+    func cancel() {
+        isActive = false
+        Task {
+            // 開始処理の完了を待ってから停止（end と同様に競合を避ける）。確定テキストは挿入しない。
+            await startTask?.value
+            _ = await transcription.stop()
+            hud.hide()
+            isFinishing = false
+        }
     }
 
     /// AI整形が実際に利用可能か（設定オン かつ モデル利用可）。
@@ -91,7 +111,7 @@ final class DictationCoordinator {
 
     /// 手動トグル（メニューバーから / ホットキーのトグル方式と等価）。
     func toggle() {
-        if transcription.isRunning {
+        if isActive {
             end()
         } else {
             begin()
@@ -99,7 +119,9 @@ final class DictationCoordinator {
     }
 
     private func begin() {
-        guard !transcription.isRunning, !isFinishing else { return }
+        // isActive を同期的に判定。短い発話で begin/end が交錯しても破綻しない。
+        guard !isActive, !isFinishing else { return }
+        isActive = true
 
         // 最新の辞書を取り込む。
         if let data = loadPipelineData?() {
@@ -118,13 +140,17 @@ final class DictationCoordinator {
         }
 
         hud.show(transcription)
-        Task { await transcription.start() }
+        startTask = Task { await transcription.start() }
     }
 
     private func end() {
-        guard transcription.isRunning, !isFinishing else { return }
+        guard isActive, !isFinishing else { return }
+        isActive = false
         isFinishing = true
         Task {
+            // 開始処理の完了を待ってから停止する。これをしないと、短い発話で
+            // stop() の後に start() のセットアップが完了し、.listening に戻って固着する。
+            await startTask?.value
             let text = await transcription.stop()
             let processed = await process(text)
             hud.hide()
