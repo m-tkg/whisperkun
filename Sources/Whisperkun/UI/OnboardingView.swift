@@ -95,7 +95,8 @@ final class OnboardingController {
         // SwiftUIビューにウィンドウサイズを追従させない（制約更新ループの回避）。
         hosting.sizingOptions = []
         let window = NSWindow(contentViewController: hosting)
-        window.title = "はじめに"
+        window.title = String(localized: "はじめに")
+        window.identifier = NSUserInterfaceItemIdentifier("onboarding")
         window.styleMask = [.titled, .closable]
         window.isReleasedWhenClosed = false
         window.setContentSize(NSSize(width: 460, height: 380))

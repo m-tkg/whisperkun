@@ -1,0 +1,121 @@
+/* Whisperkun — English localization (keys are the Japanese source strings) */
+
+/* Menu */
+"設定…" = "Settings…";
+"Whisperkun を終了" = "Quit Whisperkun";
+"アップデートを確認" = "Check for Updates";
+"アップデート %@ をインストール…" = "Install Update %@…";
+"ローカル" = "Local";
+
+/* Onboarding */
+"はじめに" = "Get Started";
+"Whisperkun へようこそ" = "Welcome to Whisperkun";
+"音声入力を使うには、次の3つの権限が必要です。" = "Voice input requires the following three permissions.";
+"マイク" = "Microphone";
+"音声を取り込みます。" = "Captures your voice.";
+"音声認識" = "Speech Recognition";
+"オンデバイスで文字起こしします。" = "Transcribes on device.";
+"アクセシビリティ" = "Accessibility";
+"他アプリへの貼り付けとホットキーに使います。システム設定で許可後、「再確認」を押してください。" = "Used for pasting into other apps and for the hotkey. After allowing it in System Settings, press “Re-check”.";
+"再確認" = "Re-check";
+"始める" = "Start";
+"あとで" = "Later";
+"許可" = "Allow";
+
+/* Recording HUD */
+"AIで整形中" = "Formatting with AI";
+"準備中" = "Preparing";
+"認識中" = "Listening";
+"エラー" = "Error";
+
+/* Settings tabs */
+"一般" = "General";
+"権限" = "Permissions";
+"ホットキー" = "Hotkey";
+"辞書" = "Dictionary";
+"履歴" = "History";
+
+/* General settings */
+"日本語" = "Japanese";
+"英語 (US)" = "English (US)";
+"中国語 (簡体)" = "Chinese (Simplified)";
+"韓国語" = "Korean";
+"AI整形" = "AI Formatting";
+"Foundation Models で整形する" = "Format with Foundation Models";
+"利用不可: %@" = "Unavailable: %@";
+"文字起こし" = "Transcription";
+"既定の言語" = "Default Language";
+
+/* AI availability reasons */
+"この端末は Apple Intelligence 非対応です" = "This device doesn’t support Apple Intelligence.";
+"Apple Intelligence が有効になっていません" = "Apple Intelligence is not enabled.";
+"モデルの準備中です" = "The model is preparing.";
+"オンデバイスモデルを利用できません" = "The on-device model is unavailable.";
+
+/* Permissions settings */
+"状態を再確認" = "Re-check status";
+"セットアップガイドを開く" = "Open setup guide";
+"アクセシビリティはシステム設定で許可後、「状態を再確認」を押してください。" = "After allowing Accessibility in System Settings, press “Re-check status”.";
+
+/* Dictionary settings */
+"認識結果の用語を置換します（誤認識の補正など）。" = "Replaces terms in the recognized text (e.g., to correct misrecognitions).";
+"変換元" = "From";
+"変換先" = "To";
+"大小区別" = "Case";
+"する" = "Yes";
+"しない" = "No";
+"追加" = "Add";
+
+/* History */
+"文字起こし履歴" = "Transcription History";
+"すべて削除" = "Delete All";
+"まだ履歴はありません" = "No history yet.";
+"コピー" = "Copy";
+"削除" = "Delete";
+
+/* Hotkey settings */
+"起動方式" = "Activation";
+"方式" = "Mode";
+"プッシュトゥトーク（長押し中だけ録音）" = "Push-to-talk (record while held)";
+"トグル（押すたびに開始/停止）" = "Toggle (press to start/stop)";
+"修飾キー" = "Modifier Keys";
+"ホットキーをクリア（未設定）" = "Clear hotkey (unset)";
+"ボックスをクリックしてから、使いたい修飾キーを押してください（左右どちらも・複数同時押しも可。押している間は表示され、すべて離すと確定）。未設定の間はホットキーで録音できません。左側のキー（左 Command など）はコピー/貼り付け等の通常操作と衝突しやすいので注意。" = "Click the box, then press the modifier key(s) you want (left or right; multiple keys at once are allowed). They appear while held and are set when you release all. While unset, you can’t record with a hotkey. Note that left-side keys (e.g., Left Command) tend to conflict with common shortcuts like copy/paste.";
+"ホットキーが未起動です。アクセシビリティ権限を許可してください。" = "The hotkey is not active. Please allow Accessibility permission.";
+"アクセシビリティを許可してホットキーを開始" = "Allow Accessibility and start the hotkey";
+
+/* Hotkey recorder */
+"修飾キーを押す（左右・複数同時可）…" = "Press modifier key(s) (left/right, multiple)…";
+"未設定" = "Not set";
+
+/* Modifier names */
+"左 Control" = "Left Control";
+"右 Control" = "Right Control";
+"左 Option" = "Left Option";
+"右 Option" = "Right Option";
+"左 Shift" = "Left Shift";
+"右 Shift" = "Right Shift";
+"左 Command" = "Left Command";
+"右 Command" = "Right Command";
+
+/* Update alerts */
+"最新です" = "Up to date";
+"現在のバージョン %@ が最新です。" = "Version %@ is the latest.";
+"アップデートの確認に失敗しました" = "Failed to check for updates";
+"新しいバージョン %@ があります" = "Version %@ is available";
+"現在のバージョン: %@\nインストールするとアプリを再起動します。" = "Current version: %@\nInstalling will restart the app.";
+"更新" = "Update";
+"リリースページを開く" = "Open Release Page";
+"キャンセル" = "Cancel";
+"アップデートに失敗しました" = "Update failed";
+
+/* Updater errors */
+"アプリの場所に書き込めません: %@。手動での更新が必要です。" = "Can’t write to the app location: %@. A manual update is required.";
+"リリースに zip が見つかりませんでした。" = "No zip was found in the release.";
+"更新コマンドが失敗しました: %@" = "The update command failed: %@";
+"ダウンロードしたアーカイブに .app が見つかりませんでした。" = "No .app was found in the downloaded archive.";
+"ダウンロードした .app の識別子が一致しませんでした。" = "The downloaded .app’s identifier did not match.";
+"リリース情報の取得に失敗しました（HTTP %lld）。" = "Failed to fetch release info (HTTP %lld).";
+"リリース情報の解析に失敗しました。" = "Failed to parse release info.";
+"リリースに zip アセットが見つかりませんでした。" = "No zip asset was found in the release.";
+"ダウンロードに失敗しました（HTTP %lld）。" = "Download failed (HTTP %lld).";

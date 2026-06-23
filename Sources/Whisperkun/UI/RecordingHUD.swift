@@ -38,11 +38,11 @@ struct RecordingHUDView: View {
     }
 
     private var statusLabel: String {
-        if state.isFormatting { return "AIで整形中" }
+        if state.isFormatting { return String(localized: "AIで整形中") }
         switch transcription.phase {
-        case .preparing: return "準備中"
-        case .listening: return "認識中"
-        case .failed: return "エラー"
+        case .preparing: return String(localized: "準備中")
+        case .listening: return String(localized: "認識中")
+        case .failed: return String(localized: "エラー")
         case .idle: return ""
         }
     }

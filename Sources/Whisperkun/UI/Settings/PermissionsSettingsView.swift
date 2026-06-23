@@ -35,7 +35,7 @@ struct PermissionsSettingsView: View {
     }
 
     @ViewBuilder
-    private func permissionRow(title: String, state: PermissionState, action: @escaping () -> Void) -> some View {
+    private func permissionRow(title: LocalizedStringKey, state: PermissionState, action: @escaping () -> Void) -> some View {
         HStack {
             Image(systemName: symbol(for: state))
                 .foregroundStyle(color(for: state))

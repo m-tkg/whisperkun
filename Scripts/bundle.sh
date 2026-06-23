@@ -34,6 +34,11 @@ mkdir -p "$APP/Contents/Resources"
 cp "$BIN_DIR/Whisperkun" "$APP/Contents/MacOS/Whisperkun"
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 
+# ローカライズ（OS の言語に追従）。各 *.lproj を Resources へコピーする。
+for lproj in "$ROOT"/Resources/*.lproj; do
+  [[ -d "$lproj" ]] && cp -R "$lproj" "$APP/Contents/Resources/"
+done
+
 # ローカル検証ビルドはバンドルID/表示名を差し替えて本番と権限を分離する。
 if [[ "$LOCAL" == "1" ]]; then
   /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$APP/Contents/Info.plist"

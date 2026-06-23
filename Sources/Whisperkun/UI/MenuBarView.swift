@@ -28,9 +28,9 @@ struct MenuBarView: View {
     /// 新バージョンがあればインストール、なければ確認のラベル。
     private var updateMenuTitle: String {
         if let release = appState.availableRelease {
-            return "アップデート \(release.tagName) をインストール…"
+            return String(localized: "アップデート \(release.tagName) をインストール…")
         }
-        return "アップデートを確認"
+        return String(localized: "アップデートを確認")
     }
 
     private func openSettingsAndActivate() {
@@ -50,11 +50,12 @@ struct MenuBarView: View {
     }
 
     /// 設定ウィンドウを探す（オンボーディング以外の可視な通常ウィンドウ）。
+    /// オンボーディングは identifier で除外する（タイトルはローカライズで変わるため）。
     private func settingsWindow() -> NSWindow? {
         NSApp.windows.first { window in
             window.isVisible
                 && window.styleMask.contains(.titled)
-                && window.title != "はじめに"
+                && window.identifier?.rawValue != "onboarding"
         }
     }
 

@@ -33,13 +33,13 @@ final class AIService {
             return nil
         case .unavailable(let reason):
             switch reason {
-            case .deviceNotEligible: return "この端末は Apple Intelligence 非対応です"
-            case .appleIntelligenceNotEnabled: return "Apple Intelligence が有効になっていません"
-            case .modelNotReady: return "モデルの準備中です"
-            @unknown default: return "オンデバイスモデルを利用できません"
+            case .deviceNotEligible: return String(localized: "この端末は Apple Intelligence 非対応です")
+            case .appleIntelligenceNotEnabled: return String(localized: "Apple Intelligence が有効になっていません")
+            case .modelNotReady: return String(localized: "モデルの準備中です")
+            @unknown default: return String(localized: "オンデバイスモデルを利用できません")
             }
         @unknown default:
-            return "オンデバイスモデルを利用できません"
+            return String(localized: "オンデバイスモデルを利用できません")
         }
     }
 

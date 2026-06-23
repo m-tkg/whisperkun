@@ -86,7 +86,7 @@ final class HotkeyRecorderNSView: NSView {
         if recording {
             // 記録中に押している組み合わせを確定前から随時表示（未押下なら案内文）。
             if currentlyDown.isEmpty {
-                text = "修飾キーを押す（左右・複数同時可）…"
+                text = String(localized: "修飾キーを押す（左右・複数同時可）…")
             } else {
                 text = HotkeyModifier.displayName(for: currentlyDown)
             }
@@ -95,7 +95,7 @@ final class HotkeyRecorderNSView: NSView {
             text = HotkeyModifier.displayName(for: modifiers)
             color = .labelColor
         } else {
-            text = "未設定"
+            text = String(localized: "未設定")
             color = .secondaryLabelColor
         }
 

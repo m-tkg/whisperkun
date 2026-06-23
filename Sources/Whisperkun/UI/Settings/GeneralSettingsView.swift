@@ -33,7 +33,7 @@ struct GeneralSettingsView: View {
                     set: { appState.settings.defaultLocaleID = $0; appState.applySettings() }
                 )) {
                     ForEach(locales, id: \.id) { locale in
-                        Text(locale.label).tag(locale.id)
+                        Text(LocalizedStringKey(locale.label)).tag(locale.id)
                     }
                 }
             }

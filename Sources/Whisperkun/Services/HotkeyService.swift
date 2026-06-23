@@ -34,14 +34,14 @@ enum HotkeyModifier: String, CaseIterable, Codable {
 
     var displayName: String {
         switch self {
-        case .leftControl: return "左 Control"
-        case .rightControl: return "右 Control"
-        case .leftOption: return "左 Option"
-        case .rightOption: return "右 Option"
-        case .leftShift: return "左 Shift"
-        case .rightShift: return "右 Shift"
-        case .leftCommand: return "左 Command"
-        case .rightCommand: return "右 Command"
+        case .leftControl: return String(localized: "左 Control")
+        case .rightControl: return String(localized: "右 Control")
+        case .leftOption: return String(localized: "左 Option")
+        case .rightOption: return String(localized: "右 Option")
+        case .leftShift: return String(localized: "左 Shift")
+        case .rightShift: return String(localized: "右 Shift")
+        case .leftCommand: return String(localized: "左 Command")
+        case .rightCommand: return String(localized: "右 Command")
         }
     }
 

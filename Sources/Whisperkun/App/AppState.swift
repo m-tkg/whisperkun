@@ -102,13 +102,13 @@ final class AppState {
                 } else {
                     availableRelease = nil
                     if interactive {
-                        showAlert(title: "最新です",
-                                  message: "現在のバージョン \(UpdateService.currentVersion) が最新です。")
+                        showAlert(title: String(localized: "最新です"),
+                                  message: String(localized: "現在のバージョン \(UpdateService.currentVersion) が最新です。"))
                     }
                 }
             } catch {
                 if interactive {
-                    showAlert(title: "アップデートの確認に失敗しました",
+                    showAlert(title: String(localized: "アップデートの確認に失敗しました"),
                               message: error.localizedDescription)
                 }
             }
@@ -118,11 +118,11 @@ final class AppState {
     /// 更新インストールの確認ダイアログを表示し、承認されたら入れ替えを実行する。
     private func promptInstall(_ release: ReleaseInfo) {
         let alert = NSAlert()
-        alert.messageText = "新しいバージョン \(release.tagName) があります"
-        alert.informativeText = "現在のバージョン: \(UpdateService.currentVersion)\nインストールするとアプリを再起動します。"
-        alert.addButton(withTitle: "更新")
-        alert.addButton(withTitle: "リリースページを開く")
-        alert.addButton(withTitle: "キャンセル")
+        alert.messageText = String(localized: "新しいバージョン \(release.tagName) があります")
+        alert.informativeText = String(localized: "現在のバージョン: \(UpdateService.currentVersion)\nインストールするとアプリを再起動します。")
+        alert.addButton(withTitle: String(localized: "更新"))
+        alert.addButton(withTitle: String(localized: "リリースページを開く"))
+        alert.addButton(withTitle: String(localized: "キャンセル"))
 
         switch alert.runModal() {
         case .alertFirstButtonReturn:
@@ -142,7 +142,7 @@ final class AppState {
                 try await selfUpdater.performUpdate(to: release)
             } catch {
                 isUpdating = false
-                showAlert(title: "アップデートに失敗しました", message: error.localizedDescription)
+                showAlert(title: String(localized: "アップデートに失敗しました"), message: error.localizedDescription)
             }
         }
     }
@@ -151,7 +151,7 @@ final class AppState {
         let alert = NSAlert()
         alert.messageText = title
         alert.informativeText = message
-        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: String(localized: "OK"))
         alert.runModal()
     }
 
