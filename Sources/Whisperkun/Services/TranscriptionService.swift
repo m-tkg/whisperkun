@@ -52,7 +52,11 @@ final class TranscriptionService {
 
     /// 録音と文字起こしを開始する。
     func start() async {
-        guard case .idle = phase else { return }
+        // 既に動作中（preparing/listening）なら何もしない。idle/failed からは開始する。
+        switch phase {
+        case .preparing, .listening: return
+        case .idle, .failed: break
+        }
         phase = .preparing
         liveText = ""
         finalizedText = AttributedString()
