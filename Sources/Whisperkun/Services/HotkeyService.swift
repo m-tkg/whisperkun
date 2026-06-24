@@ -147,6 +147,11 @@ final class HotkeyService {
     private var modifierIsDown = false
     private var toggledOn = false
 
+    /// PTT 押下中に実状態を定期確認する監視タスク。解放イベントを取りこぼしても固着しないための保険。
+    private var releaseWatchTask: Task<Void, Never>?
+    /// 解放取りこぼし監視の間隔。
+    private let releaseWatchInterval = Duration.milliseconds(250)
+
     var isInstalled: Bool { eventTap != nil }
 
     /// イベントタップを開始する。アクセシビリティ未許可だと nil が返り失敗する。
@@ -180,6 +185,7 @@ final class HotkeyService {
     }
 
     func uninstall() {
+        stopReleaseWatch()
         if let tap = eventTap {
             CGEvent.tapEnable(tap: tap, enable: false)
         }
@@ -220,7 +226,14 @@ final class HotkeyService {
 
         switch mode {
         case .pushToTalk:
-            if isDown { onStart?() } else { onStop?() }
+            if isDown {
+                onStart?()
+                // 押下中は解放取りこぼしに備えて実状態を定期確認する。
+                startReleaseWatch()
+            } else {
+                stopReleaseWatch()
+                onStop?()
+            }
         case .toggle:
             // 押下の立ち上がりでのみトグルする。
             if isDown {
@@ -228,6 +241,25 @@ final class HotkeyService {
                 if toggledOn { onStart?() } else { onStop?() }
             }
         }
+    }
+
+    /// PTT 押下中、実状態を一定間隔で確認する。タップ無効化イベントが届かない経路で
+    /// 解放を取りこぼしても（特に重い準備中）、ここで実状態に追従して確実に停止させる。
+    private func startReleaseWatch() {
+        releaseWatchTask?.cancel()
+        releaseWatchTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: self?.releaseWatchInterval ?? .milliseconds(250))
+                guard let self, !Task.isCancelled else { return }
+                // @MainActor を継承。差分があれば applyDownState 経由で onStop が走り、監視も止まる。
+                self.reconcileModifierState()
+            }
+        }
+    }
+
+    private func stopReleaseWatch() {
+        releaseWatchTask?.cancel()
+        releaseWatchTask = nil
     }
 }
 
