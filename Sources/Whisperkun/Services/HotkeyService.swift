@@ -32,6 +32,19 @@ enum HotkeyModifier: String, CaseIterable, Codable {
         }
     }
 
+    /// device-independent な修飾クラスのマスク（左右を区別しない）。
+    /// タップ再有効化時に `CGEventSource.flagsState` から現在状態を読み直す際に使う。
+    /// `flagsState` は device-dependent ビットを返さないことがあるため、再同期では
+    /// 左右を畳んだこのマスクで「押下中か」を判定する。
+    var classMask: UInt64 {
+        switch self {
+        case .leftControl, .rightControl: return CGEventFlags.maskControl.rawValue
+        case .leftShift, .rightShift: return CGEventFlags.maskShift.rawValue
+        case .leftOption, .rightOption: return CGEventFlags.maskAlternate.rawValue
+        case .leftCommand, .rightCommand: return CGEventFlags.maskCommand.rawValue
+        }
+    }
+
     var displayName: String {
         switch self {
         case .leftControl: return String(localized: "左 Control")
@@ -106,6 +119,11 @@ enum HotkeyModifier: String, CaseIterable, Codable {
     static func combinedMask(_ set: Set<HotkeyModifier>) -> UInt64 {
         set.reduce(UInt64(0)) { $0 | $1.deviceMask }
     }
+
+    /// 集合の device-independent クラスマスクの論理和（左右を畳んだもの）。
+    static func combinedClassMask(_ set: Set<HotkeyModifier>) -> UInt64 {
+        set.reduce(UInt64(0)) { $0 | $1.classMask }
+    }
 }
 
 /// グローバルな修飾キーを監視してディクテーションを起動する。
@@ -175,9 +193,28 @@ final class HotkeyService {
     /// C コールバックから呼ばれる。修飾キーの状態変化を解釈してハンドラを発火する。
     fileprivate func handleFlagsChanged(_ flags: UInt64) {
         guard !modifiers.isEmpty else { return }
-        // 設定したすべての修飾キーが同時に押されている間だけ「押下」とみなす。
+        // 設定したすべての修飾キーが同時に押されている間だけ「押下」とみなす（device ビットで左右判定）。
         let combined = HotkeyModifier.combinedMask(modifiers)
-        let isDown = (flags & combined) == combined
+        applyDownState((flags & combined) == combined)
+    }
+
+    /// タップ無効化中に取りこぼした押下/解放を回復する。
+    ///
+    /// `tapDisabledByTimeout` / `tapDisabledByUserInput` で無効化されている間に
+    /// 修飾キーを解放すると、その `flagsChanged` が届かず `modifierIsDown` が押下のまま
+    /// 固着し、PTT で「認識中のまま止まらない」状態になる。再有効化の直後に現在の
+    /// 修飾キー実状態を読み直し、押下状態の差分があればハンドラを発火して同期する。
+    fileprivate func reconcileModifierState() {
+        guard !modifiers.isEmpty else { return }
+        // `CGEventSource.flagsState` は device-dependent ビットを返さないことがあるため、
+        // 左右を畳んだクラスマスクで「今も押されているか」を判定する（固着の確実な解消を優先）。
+        let current = CGEventSource.flagsState(.combinedSessionState).rawValue
+        let classMask = HotkeyModifier.combinedClassMask(modifiers)
+        applyDownState((current & classMask) == classMask)
+    }
+
+    /// 押下状態の遷移を反映し、必要ならハンドラを発火する。
+    private func applyDownState(_ isDown: Bool) {
         guard isDown != modifierIsDown else { return }
         modifierIsDown = isDown
 
@@ -220,6 +257,8 @@ private func hotkeyEventCallback(
                     if let tap = service.eventTapForReenable {
                         CGEvent.tapEnable(tap: tap, enable: true)
                     }
+                    // 無効化中に取りこぼしたキー解放/押下を、現在の実状態から回復する。
+                    service.reconcileModifierState()
                 }
             }
         }
