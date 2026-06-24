@@ -116,6 +116,9 @@ base は `Localization.swift` の `L.string`/`L.format` 方式だが、**Whisper
 - **`main` へ直接コミット/push しない**。変更は必ず PR 経由（`gh pr create`）。main への push はリリースに直結する。
 - 作業ブランチは**必ず最新の `main` から切る**:
   `git fetch origin && git switch main && git pull --ff-only`（または `git fetch && git switch -c <branch> origin/main`）。
+- **PR 作成後に追加修正するときは、まず `gh pr view <番号> --json state,mergedAt` でマージ済みでないか確認する**。
+  マージ済みなら作業ブランチへ push しても main に反映されない（孤立する）ので、**最新 `main` から新ブランチを切り直して別 PR を出す**
+  （元コミットは `git cherry-pick <sha>` で移植できる）。
 - 純粋ロジック（`WhisperkunCore`）はテストを書く（原則 TDD）。UI / AX / 録音まわりは実機での手動確認。
   `.menu` 形式のメニューはネイティブ項目なので System Events での自動確認が可能。
 - 新機能の追加手順: ①判定ロジックを `WhisperkunCore` に純粋実装＋テスト → ②設定が要るなら `Settings` に追加 →
