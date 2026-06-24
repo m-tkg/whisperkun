@@ -14,11 +14,15 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="${1:-release}"
 LOCAL="${LOCAL:-0}"
 
+# APP_NAME は配布する .app／実行バイナリの名前（先頭大文字: Whisperkun）。
+# DISPLAY_NAME はメニュー・システム設定に出る表示名（小文字: whisperkun）。両者は分離する。
 if [[ "$LOCAL" == "1" ]]; then
-  APP_NAME="whisperkun (Local)"
+  APP_NAME="Whisperkun (Local)"
+  DISPLAY_NAME="whisperkun (Local)"
   BUNDLE_ID="com.mtkg.whisperkun.local"
 else
-  APP_NAME="whisperkun"
+  APP_NAME="Whisperkun"
+  DISPLAY_NAME="whisperkun"
   BUNDLE_ID="com.mtkg.whisperkun"
 fi
 APP="$ROOT/$APP_NAME.app"
@@ -31,7 +35,7 @@ echo "==> Bundling $APP"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
 mkdir -p "$APP/Contents/Resources"
-cp "$BIN_DIR/whisperkun" "$APP/Contents/MacOS/whisperkun"
+cp "$BIN_DIR/whisperkun" "$APP/Contents/MacOS/Whisperkun"
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 
 # ローカライズ（OS の言語に追従）。各 *.lproj を Resources へコピーする。
@@ -42,8 +46,8 @@ done
 # ローカル検証ビルドはバンドルID/表示名を差し替えて本番と権限を分離する。
 if [[ "$LOCAL" == "1" ]]; then
   /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$APP/Contents/Info.plist"
-  /usr/libexec/PlistBuddy -c "Set :CFBundleName $APP_NAME" "$APP/Contents/Info.plist"
-  /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $APP_NAME" "$APP/Contents/Info.plist"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleName $DISPLAY_NAME" "$APP/Contents/Info.plist"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $DISPLAY_NAME" "$APP/Contents/Info.plist"
 fi
 
 # メニューバー用アイコン（実行時に Bundle.main から読み込む）

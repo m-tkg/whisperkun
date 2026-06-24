@@ -25,7 +25,7 @@ swift test                  # テスト（whisperkunCore の純ロジック）
 swift run                   # 開発中の直接実行
 
 bash Scripts/bundle.sh      # .app バンドルを生成（既定 release・ad-hoc 署名）
-open whisperkun.app
+open Whisperkun.app
 ```
 
 ### ローカル検証ビルド
@@ -37,7 +37,7 @@ open whisperkun.app
 
 ```sh
 LOCAL=1 bash Scripts/bundle.sh debug
-open "whisperkun (Local).app"
+open "Whisperkun (Local).app"
 ```
 
 ## アーキテクチャ
@@ -75,7 +75,7 @@ open "whisperkun (Local).app"
 
 `main` への push で GitHub Actions（`.github/workflows/release.yml`）が走り、
 `Resources/Info.plist` の `CFBundleShortVersionString` を読んで `v<version>` のタグ付き
-リリース（署名・公証済み `whisperkun.zip`）を作成する。リリースしたいときは Info.plist の
+リリース（署名・公証済み `Whisperkun.zip`）を作成する。リリースしたいときは Info.plist の
 バージョンを上げてマージする。
 
 ## ライセンス

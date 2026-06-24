@@ -49,12 +49,12 @@ import Testing
           "html_url": "https://example.com/r",
           "assets": [
             {"name": "notes.txt", "browser_download_url": "https://example.com/notes.txt"},
-            {"name": "whisperkun.zip", "browser_download_url": "https://example.com/whisperkun.zip"}
+            {"name": "Whisperkun.zip", "browser_download_url": "https://example.com/Whisperkun.zip"}
           ]
         }
         """.utf8)
         let info = try JSONDecoder().decode(ReleaseInfo.self, from: json)
         #expect(info.assets.count == 2)
-        #expect(info.zipAssetURL == URL(string: "https://example.com/whisperkun.zip"))
+        #expect(info.zipAssetURL == URL(string: "https://example.com/Whisperkun.zip"))
     }
 }

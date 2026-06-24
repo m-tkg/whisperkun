@@ -118,7 +118,7 @@ struct UpdateService {
             throw ServiceError.downloadFailed(http.statusCode)
         }
 
-        let destination = directory.appendingPathComponent("whisperkun.zip")
+        let destination = directory.appendingPathComponent("Whisperkun.zip")
         try? FileManager.default.removeItem(at: destination)
         try FileManager.default.moveItem(at: tempURL, to: destination)
         return destination
