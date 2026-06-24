@@ -74,6 +74,8 @@ final class DictationCoordinator {
         Task {
             _ = await transcription.stop()
             hud.hide()
+            // 次回に備えて再ウォーム。
+            transcription.prewarm()
         }
     }
 
@@ -84,7 +86,16 @@ final class DictationCoordinator {
     /// ホットキー監視を開始する（アクセシビリティ権限が必要）。
     @discardableResult
     func installHotkey() -> Bool {
-        hotkey.install()
+        let installed = hotkey.install()
+        if installed { prewarmTranscription() }
+        return installed
+    }
+
+    /// 押下前に文字起こしの重い準備（アセット導入・フォーマット解決・analyzer 生成）を先行させる。
+    /// これにより押下時は即 `.listening` になり、開始のもたつきと先頭の取りこぼしを減らす。
+    func prewarmTranscription() {
+        transcription.locale = Locale(identifier: defaultLocaleID)
+        transcription.prewarm()
     }
 
     var hotkeyInstalled: Bool { hotkey.isInstalled }
@@ -95,8 +106,13 @@ final class DictationCoordinator {
     func applyHotkeySettings(mode: HotkeyMode, modifiers: Set<HotkeyModifier>) {
         hotkey.mode = mode
         hotkey.modifiers = modifiers
+        // ロケールが変わり得るので準備物を作り直す。
+        transcription.locale = Locale(identifier: defaultLocaleID)
+        transcription.invalidatePrewarm()
         if modifiers.isEmpty {
             hotkey.uninstall()
+        } else {
+            transcription.prewarm()
         }
     }
 
@@ -150,6 +166,8 @@ final class DictationCoordinator {
             // 開始処理の完了は待たない。stop が世代を進めて進行中の開始処理を無効化するため、
             // preparing 中に止めても .listening へ遷移して固着することはない。
             let text = await transcription.stop()
+            // 確定処理が済んだら次回に備えて再ウォーム（整形・挿入と並行でよい）。
+            transcription.prewarm()
             let processed = await process(text)
             hud.hide()
             if !processed.isEmpty {

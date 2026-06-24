@@ -41,6 +41,19 @@ final class TranscriptionService {
     private var inputContinuation: AsyncStream<AnalyzerInput>.Continuation?
     private var resultsTask: Task<Void, Never>?
 
+    /// 押下前に用意しておく、マイク非依存のセットアップ一式。
+    /// これを持っていれば runSession はアセット導入・フォーマット解決を飛ばして即 `.listening` になり、
+    /// 「準備中」をほぼ省略できる（=録音開始のもたつき・先頭の取りこぼしを減らす）。
+    private struct PreparedKit {
+        let transcriber: SpeechTranscriber
+        let analyzer: SpeechAnalyzer
+        let analyzerFormat: AVAudioFormat
+        let converter: BufferConverter
+        let locale: Locale
+    }
+    private var preparedKit: PreparedKit?
+    private var prewarmTask: Task<Void, Never>?
+
     /// 確定済みテキスト（isFinal の結果を連結したもの）。
     private var finalizedText = AttributedString()
 
@@ -69,31 +82,74 @@ final class TranscriptionService {
         return generation
     }
 
+    /// 押下前に重い準備（アセット導入・フォーマット解決・analyzer 生成・engine.prepare）を済ませる。
+    /// ホットキー設定後やセッション終了後に呼ぶ。録音中・準備中・準備済みなら何もしない。
+    /// 失敗しても無視（押下時に runSession 側でフォールバック準備する）。
+    func prewarm() {
+        guard !isRunning, preparedKit == nil, prewarmTask == nil else { return }
+        let locale = self.locale
+        prewarmTask = Task { [weak self] in
+            let kit = try? await Self.makeKit(locale: locale)
+            guard let self else { return }
+            self.prewarmTask = nil
+            // 準備中に開始/ロケール変更が起きていたら破棄する。
+            if let kit, self.preparedKit == nil, !self.isRunning, kit.locale == self.locale {
+                self.preparedKit = kit
+                self.engine.prepare()  // start を速くするため事前にエンジンも整える。
+            }
+        }
+    }
+
+    /// 準備物を破棄する（ロケール変更時など）。
+    func invalidatePrewarm() {
+        prewarmTask?.cancel()
+        prewarmTask = nil
+        preparedKit = nil
+    }
+
+    /// マイク非依存のセットアップ一式を作る（アセット導入・フォーマット解決を含む）。
+    private static func makeKit(locale: Locale) async throws -> PreparedKit {
+        let transcriber = SpeechTranscriber(
+            locale: locale,
+            transcriptionOptions: [],
+            reportingOptions: [.volatileResults],
+            attributeOptions: []
+        )
+        let analyzer = SpeechAnalyzer(modules: [transcriber])
+        if let request = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
+            try await request.downloadAndInstall()
+        }
+        guard let format = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber]) else {
+            throw TranscriptionError.audioFormatUnavailable
+        }
+        return PreparedKit(
+            transcriber: transcriber,
+            analyzer: analyzer,
+            analyzerFormat: format,
+            converter: BufferConverter(outputFormat: format),
+            locale: locale
+        )
+    }
+
     /// `beginSession` で得た世代でセットアップを行う。途中で世代が変わっていたら
     /// （stop / 新しい beginSession が走ったら）中断し、`.listening` へは遷移しない。
     func runSession(generation gen: Int) async {
         do {
-            let transcriber = SpeechTranscriber(
-                locale: locale,
-                transcriptionOptions: [],
-                reportingOptions: [.volatileResults],
-                attributeOptions: []
-            )
-            let analyzer = SpeechAnalyzer(modules: [transcriber])
-
-            // 言語アセットが未インストールならダウンロードする。
-            if let request = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
-                try await request.downloadAndInstall()
+            // プリウォーム済みなら重い準備（アセット導入・フォーマット解決）を飛ばす。
+            // 未ウォーム / ロケール不一致ならその場で準備する（従来経路へのフォールバック）。
+            let kit: PreparedKit
+            if let warm = preparedKit, warm.locale == locale {
+                preparedKit = nil
+                kit = warm
+            } else {
+                preparedKit = nil
+                kit = try await Self.makeKit(locale: locale)
+                guard generation == gen else { return }  // 既に停止/再開された
             }
-            guard generation == gen else { return }  // 既に停止/再開された
 
-            // 解析器が要求する最適フォーマットを取得し、その形式へ変換する。
-            guard let analyzerFormat = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber]) else {
-                throw TranscriptionError.audioFormatUnavailable
-            }
-            guard generation == gen else { return }
-
-            let bufferConverter = BufferConverter(outputFormat: analyzerFormat)
+            let transcriber = kit.transcriber
+            let analyzer = kit.analyzer
+            let bufferConverter = kit.converter
             let (inputStream, continuation) = AsyncStream.makeStream(of: AnalyzerInput.self)
 
             // マイクのネイティブフォーマットでタップを張り、コールバック内で変換して投入する。
