@@ -3,7 +3,7 @@
 # 使い方: bash Scripts/bundle.sh [debug|release]   (既定: release)
 #
 # ローカル検証用ビルド: LOCAL=1 bash Scripts/bundle.sh debug
-#   本番アプリ(dev.mtkg.Whisperkun)と TCC 権限が衝突しないよう、バンドルID と
+#   本番アプリ(com.mtkg.Whisperkun)と TCC 権限が衝突しないよう、バンドルID と
 #   表示名を分けた「Whisperkun (Local)」を生成する。これによりシステム設定の
 #   権限一覧に本番と別エントリとして並び、独立して許可できる。
 #   再ビルドで権限が外れるのを避けたい場合は、安定した自己署名IDを併用する:
@@ -16,10 +16,10 @@ LOCAL="${LOCAL:-0}"
 
 if [[ "$LOCAL" == "1" ]]; then
   APP_NAME="Whisperkun (Local)"
-  BUNDLE_ID="dev.mtkg.Whisperkun.local"
+  BUNDLE_ID="com.mtkg.Whisperkun.local"
 else
   APP_NAME="Whisperkun"
-  BUNDLE_ID="dev.mtkg.Whisperkun"
+  BUNDLE_ID="com.mtkg.Whisperkun"
 fi
 APP="$ROOT/$APP_NAME.app"
 

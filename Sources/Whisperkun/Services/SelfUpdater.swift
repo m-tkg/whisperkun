@@ -2,7 +2,7 @@ import AppKit
 import OSLog
 import WhisperkunCore
 
-private let logger = Logger(subsystem: "dev.mtkg.Whisperkun", category: "SelfUpdater")
+private let logger = Logger(subsystem: "com.mtkg.Whisperkun", category: "SelfUpdater")
 
 /// 最新リリースの zip をダウンロード・展開し、起動中の `.app` を上書きして再起動する。
 ///

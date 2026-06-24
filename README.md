@@ -30,9 +30,9 @@ open Whisperkun.app
 
 ### ローカル検証ビルド
 
-本番アプリ（`dev.mtkg.Whisperkun`）を既にアクセシビリティ許可済みだと、同じバンドルIDの
+本番アプリ（`com.mtkg.Whisperkun`）を既にアクセシビリティ許可済みだと、同じバンドルIDの
 ローカルビルドは権限を独立して付与できない。`LOCAL=1` を付けるとバンドルID と表示名を分けた
-「Whisperkun (Local)」（`dev.mtkg.Whisperkun.local`）を生成し、システム設定の権限一覧に
+「Whisperkun (Local)」（`com.mtkg.Whisperkun.local`）を生成し、システム設定の権限一覧に
 本番と別エントリとして並ぶ。
 
 ```sh

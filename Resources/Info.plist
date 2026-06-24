@@ -9,7 +9,7 @@
 	<key>CFBundleDisplayName</key>
 	<string>Whisperkun</string>
 	<key>CFBundleIdentifier</key>
-	<string>dev.mtkg.Whisperkun</string>
+	<string>com.mtkg.Whisperkun</string>
 	<key>CFBundleExecutable</key>
 	<string>Whisperkun</string>
 	<key>CFBundleIconFile</key>

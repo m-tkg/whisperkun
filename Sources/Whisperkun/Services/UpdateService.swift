@@ -2,7 +2,7 @@ import Foundation
 import OSLog
 import WhisperkunCore
 
-private let log = Logger(subsystem: "dev.mtkg.Whisperkun", category: "update")
+private let log = Logger(subsystem: "com.mtkg.Whisperkun", category: "update")
 
 /// 外部プロセスを起動し、終了を待って標準出力を返す簡易ランナー（`.app` 展開の ditto などに使用）。
 enum ProcessRunner {
