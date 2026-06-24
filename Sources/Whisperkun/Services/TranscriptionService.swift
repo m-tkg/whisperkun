@@ -1,7 +1,11 @@
 import AVFoundation
 import Foundation
 import Observation
+import OSLog
 import Speech
+import WhisperkunCore
+
+private let txLog = Logger(subsystem: "com.mtkg.Whisperkun", category: "transcription")
 
 enum TranscriptionError: Error {
     case audioFormatUnavailable
@@ -166,24 +170,23 @@ final class TranscriptionService {
 
     /// 確定処理（finalize＋結果購読の完了）を待つ。期限内に終われば true、超過なら false。
     /// 超過時は残りの処理を諦めて呼び出し元を進める（固着防止）。
+    ///
+    /// `finalizeAndFinishThroughEndOfInput()` は Speech 側で稀にキャンセルにも応答せず返らず、
+    /// 構造化タスクで待つと task group ごと固着する（「認識中」のまま停止できない不具合）。
+    /// `withTimeout` は遅れた処理を待たずに必ず期限内で返すため、固着を確実に防ぐ。
     private func finishWithTimeout(seconds: Double) async -> Bool {
         // self を跨がせないよう、必要な値はローカルに取り出してから渡す。
         let analyzer = self.analyzer
         let resultsTask = self.resultsTask
-        return await withTaskGroup(of: Bool.self) { group in
-            group.addTask {
-                try? await analyzer?.finalizeAndFinishThroughEndOfInput()
-                await resultsTask?.value
-                return true
-            }
-            group.addTask {
-                try? await Task.sleep(for: .seconds(seconds))
-                return false
-            }
-            let first = await group.next() ?? false
-            group.cancelAll()
-            return first
+        let finished = await withTimeout(seconds: seconds) {
+            try? await analyzer?.finalizeAndFinishThroughEndOfInput()
+            await resultsTask?.value
+            return true
         }
+        if finished == nil {
+            txLog.warning("finalize timed out after \(seconds, privacy: .public)s; forcing stop")
+        }
+        return finished ?? false
     }
 
     private func apply(text: AttributedString, isFinal: Bool) {
