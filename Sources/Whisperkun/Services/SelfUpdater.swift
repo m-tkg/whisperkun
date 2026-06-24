@@ -62,8 +62,10 @@ final class SelfUpdater {
         guard let newApp = try firstFile(in: extractDir, pathExtension: "app") else {
             throw UpdateError.bundleNotFound
         }
+        // 基底ID（`.local` を除いたID）で比較する。これによりローカル検証ビルド
+        // （`*.local`）からも本番リリースへ自己更新できる。
         guard let newBundleID = Bundle(url: newApp)?.bundleIdentifier,
-              newBundleID == Bundle.main.bundleIdentifier else {
+              Self.baseBundleID(newBundleID) == Self.baseBundleID(Bundle.main.bundleIdentifier) else {
             throw UpdateError.bundleIDMismatch
         }
 
@@ -74,6 +76,12 @@ final class SelfUpdater {
     }
 
     // MARK: - 補助
+
+    /// `.local` サフィックスを除いた基底バンドルID。ローカル検証ビルドと本番を同一視するために使う。
+    static func baseBundleID(_ id: String?) -> String? {
+        guard let id else { return nil }
+        return id.hasSuffix(".local") ? String(id.dropLast(".local".count)) : id
+    }
 
     private func ensureWritable(_ bundleURL: URL) throws {
         let fm = FileManager.default
