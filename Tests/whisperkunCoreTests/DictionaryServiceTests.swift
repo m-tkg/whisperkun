@@ -1,5 +1,5 @@
 import Testing
-@testable import WhisperkunCore
+@testable import whisperkunCore
 
 @Suite struct DictionaryServiceTests {
     let service = DictionaryService()

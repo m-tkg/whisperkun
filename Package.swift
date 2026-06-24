@@ -2,23 +2,23 @@
 import PackageDescription
 
 let package = Package(
-    name: "Whisperkun",
+    name: "whisperkun",
     platforms: [
         .macOS("26.0")
     ],
     targets: [
         // 純粋ロジック（テスト対象）: AppKit/AVFoundation/Speech/SwiftData に依存しない計算・モデル
         .target(
-            name: "WhisperkunCore"
+            name: "whisperkunCore"
         ),
         // 実行ファイル本体: メニューバー常駐・ホットキー・音声認識・後処理・設定UI
         .executableTarget(
-            name: "Whisperkun",
-            dependencies: ["WhisperkunCore"]
+            name: "whisperkun",
+            dependencies: ["whisperkunCore"]
         ),
         .testTarget(
-            name: "WhisperkunCoreTests",
-            dependencies: ["WhisperkunCore"]
+            name: "whisperkunCoreTests",
+            dependencies: ["whisperkunCore"]
         ),
     ]
 )

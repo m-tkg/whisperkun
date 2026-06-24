@@ -1,7 +1,7 @@
 import AppKit
 import Observation
 import SwiftData
-import WhisperkunCore
+import whisperkunCore
 
 /// アプリ全体のルート状態。各サービス・永続化・設定を束ねる。
 @MainActor

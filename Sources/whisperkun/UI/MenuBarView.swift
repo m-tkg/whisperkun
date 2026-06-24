@@ -8,7 +8,7 @@ struct MenuBarView: View {
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
-        Text("Whisperkun \(appVersion)")
+        Text("whisperkun \(appVersion)")
 
         Divider()
 
@@ -21,7 +21,7 @@ struct MenuBarView: View {
 
         Divider()
 
-        Button("Whisperkun を終了") { NSApplication.shared.terminate(nil) }
+        Button("whisperkun を終了") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")
     }
 

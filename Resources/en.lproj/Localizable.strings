@@ -1,15 +1,15 @@
-/* Whisperkun — English localization (keys are the Japanese source strings) */
+/* whisperkun — English localization (keys are the Japanese source strings) */
 
 /* Menu */
 "設定…" = "Settings…";
-"Whisperkun を終了" = "Quit Whisperkun";
+"whisperkun を終了" = "Quit whisperkun";
 "アップデートを確認" = "Check for Updates";
 "アップデート %@ をインストール…" = "Install Update %@…";
 "ローカル" = "Local";
 
 /* Onboarding */
 "はじめに" = "Get Started";
-"Whisperkun へようこそ" = "Welcome to Whisperkun";
+"whisperkun へようこそ" = "Welcome to whisperkun";
 "音声入力を使うには、次の3つの権限が必要です。" = "Voice input requires the following three permissions.";
 "マイク" = "Microphone";
 "音声を取り込みます。" = "Captures your voice.";

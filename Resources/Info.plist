@@ -10,21 +10,21 @@
 		<string>ja</string>
 	</array>
 	<key>CFBundleName</key>
-	<string>Whisperkun</string>
+	<string>whisperkun</string>
 	<key>CFBundleDisplayName</key>
-	<string>Whisperkun</string>
+	<string>whisperkun</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.mtkg.Whisperkun</string>
+	<string>com.mtkg.whisperkun</string>
 	<key>CFBundleExecutable</key>
-	<string>Whisperkun</string>
+	<string>whisperkun</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.11</string>
+	<string>1.0.12</string>
 	<key>CFBundleVersion</key>
-	<string>33</string>
+	<string>34</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>26.0</string>
 	<key>LSUIElement</key>

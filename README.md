@@ -1,4 +1,4 @@
-# Whisperkun
+# whisperkun
 
 macOS のメニューバー常駐型の音声入力（ディクテーション）アプリ。ホットキーで録音し、
 **オンデバイス**で文字起こし → 後処理（用語辞書の置換・AI整形）→ 前面アプリへ自動入力する。
@@ -21,34 +21,34 @@ Swift Package Manager 製。XcodeGen は使わない。
 
 ```sh
 swift build                 # ビルド
-swift test                  # テスト（WhisperkunCore の純ロジック）
+swift test                  # テスト（whisperkunCore の純ロジック）
 swift run                   # 開発中の直接実行
 
 bash Scripts/bundle.sh      # .app バンドルを生成（既定 release・ad-hoc 署名）
-open Whisperkun.app
+open whisperkun.app
 ```
 
 ### ローカル検証ビルド
 
-本番アプリ（`com.mtkg.Whisperkun`）を既にアクセシビリティ許可済みだと、同じバンドルIDの
+本番アプリ（`com.mtkg.whisperkun`）を既にアクセシビリティ許可済みだと、同じバンドルIDの
 ローカルビルドは権限を独立して付与できない。`LOCAL=1` を付けるとバンドルID と表示名を分けた
-「Whisperkun (Local)」（`com.mtkg.Whisperkun.local`）を生成し、システム設定の権限一覧に
+「whisperkun (Local)」（`com.mtkg.whisperkun.local`）を生成し、システム設定の権限一覧に
 本番と別エントリとして並ぶ。
 
 ```sh
 LOCAL=1 bash Scripts/bundle.sh debug
-open "Whisperkun (Local).app"
+open "whisperkun (Local).app"
 ```
 
 ## アーキテクチャ
 
-2ターゲット構成。純粋ロジックを `WhisperkunCore` に分離し、テスト対象にする。
+2ターゲット構成。純粋ロジックを `whisperkunCore` に分離し、テスト対象にする。
 
-- **WhisperkunCore**（ライブラリ / テスト対象）
+- **whisperkunCore**（ライブラリ / テスト対象）
   - `DictionaryService` … 単語単位の用語置換（`NLTokenizer` の境界に一致する箇所のみ置換）
   - `DictionaryRule` … 置換ルール
   - `Release` … GitHub リリース情報モデル ＋ バージョン比較（`VersionComparator`）
-- **Whisperkun**（実行ファイル / AppKit + SwiftUI）
+- **whisperkun**（実行ファイル / AppKit + SwiftUI）
   - `App/` … `WhisperkunApp`（MenuBarExtra ＋ Settings）、`AppState`（ルート状態・SwiftData ブリッジ）
   - `Pipeline/DictationCoordinator` … 録音→文字起こし→後処理→挿入の統括
   - `Services/` … `TranscriptionService`（Speech）、`AIService`（Foundation Models）、
@@ -75,7 +75,7 @@ open "Whisperkun (Local).app"
 
 `main` への push で GitHub Actions（`.github/workflows/release.yml`）が走り、
 `Resources/Info.plist` の `CFBundleShortVersionString` を読んで `v<version>` のタグ付き
-リリース（署名・公証済み `Whisperkun.zip`）を作成する。リリースしたいときは Info.plist の
+リリース（署名・公証済み `whisperkun.zip`）を作成する。リリースしたいときは Info.plist の
 バージョンを上げてマージする。
 
 ## ライセンス

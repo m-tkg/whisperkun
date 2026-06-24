@@ -2,16 +2,16 @@
 
 このリポジトリで作業する際のガイド。共通方針は上位の
 [CLAUDE_base.md](../CLAUDE_base.md)（メニューバー常駐アプリ共通ガイド）に従い、
-本ファイルには Whisperkun 固有の事項を記す。
+本ファイルには whisperkun 固有の事項を記す。
 
 ## 概要
 
-Whisperkun は macOS のメニューバー常駐型ディクテーションアプリ。ホットキーで録音し、
+whisperkun は macOS のメニューバー常駐型ディクテーションアプリ。ホットキーで録音し、
 オンデバイスで文字起こし → 辞書置換 → AI整形 → 前面アプリへ自動入力する。
 詳細は [README.md](README.md)、署名/公証は [docs/SIGNING.md](docs/SIGNING.md) を参照。
 
 - Swift 6.0 / macOS 26.0 / Swift Package Manager（XcodeGen は使わない）
-- バンドルID: `com.mtkg.Whisperkun`（ローカル検証ビルドは `com.mtkg.Whisperkun.local`）。
+- バンドルID: `com.mtkg.whisperkun`（ローカル検証ビルドは `com.mtkg.whisperkun.local`）。
   `Info.plist` の `CFBundleIdentifier`、各 `Logger(subsystem:)`、`Scripts/bundle.sh` で一貫させる。
 
 ## ビルド・テストコマンド
@@ -25,14 +25,14 @@ bash Scripts/bundle.sh               # .app 生成（既定 release・ad-hoc 署
 LOCAL=1 bash Scripts/bundle.sh debug # ローカル検証用（本番と別バンドルID・別名）
 ```
 
-テストは **Swift Testing**（`@Suite` / `@Test`）。対象は `WhisperkunCore` の純ロジックのみ。
+テストは **Swift Testing**（`@Suite` / `@Test`）。対象は `whisperkunCore` の純ロジックのみ。
 
 ## アーキテクチャ
 
-2ターゲット。純粋ロジック（プラットフォーム非依存・テスト可能）を `WhisperkunCore` に分離する。
+2ターゲット。純粋ロジック（プラットフォーム非依存・テスト可能）を `whisperkunCore` に分離する。
 
-- **WhisperkunCore**: `DictionaryService`（単語単位置換）、`DictionaryRule`、`ReleaseInfo` / `VersionComparator`。
-- **Whisperkun**（実行ファイル）: `App/`（`WhisperkunApp` / `AppState`）、`Pipeline/DictationCoordinator`、
+- **whisperkunCore**: `DictionaryService`（単語単位置換）、`DictionaryRule`、`ReleaseInfo` / `VersionComparator`。
+- **whisperkun**（実行ファイル）: `App/`（`WhisperkunApp` / `AppState`）、`Pipeline/DictationCoordinator`、
   `Services/`（Transcription / AI / TextInsertion / Hotkey / Permissions / LaunchAtLogin / SettingsStore /
   BufferConverter / Update・SelfUpdater）、`UI/`（MenuBarView / RecordingHUD / OnboardingView /
   ActivationPolicyController / Settings）。
@@ -46,7 +46,7 @@ base 必須チェックリストの実装対応（実装済み）:
   **状態はシステム側が source of truth**（`Settings`/JSON に持たず、表示時に読み直す）。トグルは即時反映。
 - **設定ダイアログ**: SwiftUI の `Settings` シーンを `TabView` で機能ごとに分割（一般/権限/ホットキー/辞書/履歴）。
   「一般」タブは左端。表示中は `ActivationPolicyController` が `.regular`、全クローズで `.accessory` に戻す。
-- **メニュー先頭のバージョン**: `MenuBarView` 先頭に `Whisperkun <version>`。ローカルビルドは
+- **メニュー先頭のバージョン**: `MenuBarView` 先頭に `whisperkun <version>`。ローカルビルドは
   `WhisperkunApp.isLocalBuild`（bundle ID が `.local` 終端か）でアイコンに「ローカル」を併記。
 - **自己更新**: `UpdateService`（公開 GitHub API を ephemeral セッションで取得）＋ `SelfUpdater`
   （zip を `ditto` 展開 → **基底ID（`.local` 除去）で bundle ID 検証** → 切り離しスクリプトで入替・再起動）。
@@ -54,7 +54,7 @@ base 必須チェックリストの実装対応（実装済み）:
 
 ## ローカライズ（固有方式）
 
-base は `Localization.swift` の `L.string`/`L.format` 方式だが、**Whisperkun は SwiftUI の自動ローカライズを採用**する。
+base は `Localization.swift` の `L.string`/`L.format` 方式だが、**whisperkun は SwiftUI の自動ローカライズを採用**する。
 
 - 方式は「**キー＝日本語ソース文字列**」。SwiftUI が自動で `Localizable.strings` を引く
   （`Text("...")` / `Toggle("...")` / `LocalizedStringKey` 等）。補間 `Text("〜: \(x)")` は `%@` 形式キーになる。
@@ -106,7 +106,7 @@ base は `Localization.swift` の `L.string`/`L.format` 方式だが、**Whisper
   （その場合は `gh release edit v<latest> --latest` で修正）。
 - **配布署名/公証の Secrets（計6つ）** は上位の `setup-release-secrets.sh` で一括登録する:
   ```sh
-  ~/git/github.com/m-tkg/setup-release-secrets.sh -r m-tkg/Whisperkun
+  ~/git/github.com/m-tkg/setup-release-secrets.sh -r m-tkg/whisperkun
   ```
   署名は Developer ID Application（Team ID `G72M73C546`）。安定署名で TCC 権限がアップデート越しに保持される。
   詳細は [docs/SIGNING.md](docs/SIGNING.md)。
@@ -119,8 +119,8 @@ base は `Localization.swift` の `L.string`/`L.format` 方式だが、**Whisper
 - **PR 作成後に追加修正するときは、まず `gh pr view <番号> --json state,mergedAt` でマージ済みでないか確認する**。
   マージ済みなら作業ブランチへ push しても main に反映されない（孤立する）ので、**最新 `main` から新ブランチを切り直して別 PR を出す**
   （元コミットは `git cherry-pick <sha>` で移植できる）。
-- 純粋ロジック（`WhisperkunCore`）はテストを書く（原則 TDD）。UI / AX / 録音まわりは実機での手動確認。
+- 純粋ロジック（`whisperkunCore`）はテストを書く（原則 TDD）。UI / AX / 録音まわりは実機での手動確認。
   `.menu` 形式のメニューはネイティブ項目なので System Events での自動確認が可能。
-- 新機能の追加手順: ①判定ロジックを `WhisperkunCore` に純粋実装＋テスト → ②設定が要るなら `Settings` に追加 →
+- 新機能の追加手順: ①判定ロジックを `whisperkunCore` に純粋実装＋テスト → ②設定が要るなら `Settings` に追加 →
   ③設定 UI（タブ）を足す → ④GUI 文字列を ja/en 両方に対訳追加。
 - 一時ファイルは `.claude/tmp/` 以下に置く。

@@ -3,8 +3,8 @@
 # 使い方: bash Scripts/bundle.sh [debug|release]   (既定: release)
 #
 # ローカル検証用ビルド: LOCAL=1 bash Scripts/bundle.sh debug
-#   本番アプリ(com.mtkg.Whisperkun)と TCC 権限が衝突しないよう、バンドルID と
-#   表示名を分けた「Whisperkun (Local)」を生成する。これによりシステム設定の
+#   本番アプリ(com.mtkg.whisperkun)と TCC 権限が衝突しないよう、バンドルID と
+#   表示名を分けた「whisperkun (Local)」を生成する。これによりシステム設定の
 #   権限一覧に本番と別エントリとして並び、独立して許可できる。
 #   再ビルドで権限が外れるのを避けたい場合は、安定した自己署名IDを併用する:
 #     SIGN_IDENTITY="Apple Development: ..." LOCAL=1 bash Scripts/bundle.sh debug
@@ -15,11 +15,11 @@ CONFIG="${1:-release}"
 LOCAL="${LOCAL:-0}"
 
 if [[ "$LOCAL" == "1" ]]; then
-  APP_NAME="Whisperkun (Local)"
-  BUNDLE_ID="com.mtkg.Whisperkun.local"
+  APP_NAME="whisperkun (Local)"
+  BUNDLE_ID="com.mtkg.whisperkun.local"
 else
-  APP_NAME="Whisperkun"
-  BUNDLE_ID="com.mtkg.Whisperkun"
+  APP_NAME="whisperkun"
+  BUNDLE_ID="com.mtkg.whisperkun"
 fi
 APP="$ROOT/$APP_NAME.app"
 
@@ -31,7 +31,7 @@ echo "==> Bundling $APP"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
 mkdir -p "$APP/Contents/Resources"
-cp "$BIN_DIR/Whisperkun" "$APP/Contents/MacOS/Whisperkun"
+cp "$BIN_DIR/whisperkun" "$APP/Contents/MacOS/whisperkun"
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 
 # ローカライズ（OS の言語に追従）。各 *.lproj を Resources へコピーする。
@@ -72,7 +72,7 @@ fi
 # （マイク/音声認識/アクセシビリティ）が保持される
 # （アドホック署名はビルドごとに署名が変わり、権限が無効化されてしまう）。
 SIGN_IDENTITY="${SIGN_IDENTITY:-}"
-ENTITLEMENTS="$ROOT/Resources/Whisperkun.entitlements"
+ENTITLEMENTS="$ROOT/Resources/whisperkun.entitlements"
 if [[ -n "$SIGN_IDENTITY" ]]; then
   # Developer ID 署名 + Hardened Runtime + セキュアタイムスタンプ（notarization の要件）。
   echo "==> Codesign ($SIGN_IDENTITY)"

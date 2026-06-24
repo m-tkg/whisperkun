@@ -1,8 +1,8 @@
 import Foundation
 import OSLog
-import WhisperkunCore
+import whisperkunCore
 
-private let log = Logger(subsystem: "com.mtkg.Whisperkun", category: "update")
+private let log = Logger(subsystem: "com.mtkg.whisperkun", category: "update")
 
 /// 外部プロセスを起動し、終了を待って標準出力を返す簡易ランナー（`.app` 展開の ditto などに使用）。
 enum ProcessRunner {
@@ -44,9 +44,9 @@ enum ProcessRunner {
 /// 公開 GitHub API（api.github.com）へ URLSession でアクセスし、リリースの取得・ダウンロードを行う。
 /// public リポジトリのため認証は不要。
 struct UpdateService {
-    static let repoFullName = "m-tkg/Whisperkun"
+    static let repoFullName = "m-tkg/whisperkun"
     static let apiBase = "https://api.github.com"
-    private static let userAgent = "Whisperkun"
+    private static let userAgent = "whisperkun"
 
     /// 更新チェックは常に最新を取得したいので、キャッシュを使わない専用セッションを用いる。
     /// （GitHub API は `cache-control: max-age=60` を返すため、共有セッションだと古い結果が返る）
@@ -118,7 +118,7 @@ struct UpdateService {
             throw ServiceError.downloadFailed(http.statusCode)
         }
 
-        let destination = directory.appendingPathComponent("Whisperkun.zip")
+        let destination = directory.appendingPathComponent("whisperkun.zip")
         try? FileManager.default.removeItem(at: destination)
         try FileManager.default.moveItem(at: tempURL, to: destination)
         return destination

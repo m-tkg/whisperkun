@@ -3,9 +3,9 @@ import Foundation
 import Observation
 import OSLog
 import Speech
-import WhisperkunCore
+import whisperkunCore
 
-private let txLog = Logger(subsystem: "com.mtkg.Whisperkun", category: "transcription")
+private let txLog = Logger(subsystem: "com.mtkg.whisperkun", category: "transcription")
 
 enum TranscriptionError: Error {
     case audioFormatUnavailable

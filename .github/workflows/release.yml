@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   release:
-    # Whisperkun は macOS 26 SDK 専用 API（FoundationModels / Speech）を使うため
+    # whisperkun は macOS 26 SDK 専用 API（FoundationModels / Speech）を使うため
     # macos-latest（現状 macOS 15）ではビルドできない。Xcode 26 を含む macos-26 を使う。
     runs-on: macos-26
     steps:
@@ -99,19 +99,19 @@ jobs:
           NOTARY_TEAM_ID: ${{ secrets.NOTARY_TEAM_ID }}
         run: |
           # 公証は zip を提出する（.app をそのまま提出できないため）
-          ditto -c -k --keepParent Whisperkun.app notarize.zip
+          ditto -c -k --keepParent whisperkun.app notarize.zip
           xcrun notarytool submit notarize.zip \
             --apple-id "$NOTARY_APPLE_ID" \
             --password "$NOTARY_PASSWORD" \
             --team-id "$NOTARY_TEAM_ID" \
             --wait
           # チケットを .app に添付（オフラインでも Gatekeeper を通す）
-          xcrun stapler staple Whisperkun.app
-          xcrun stapler validate Whisperkun.app
+          xcrun stapler staple whisperkun.app
+          xcrun stapler validate whisperkun.app
 
       - name: Create zip
         if: steps.check.outputs.exists == 'false'
-        run: zip -ry Whisperkun.zip Whisperkun.app
+        run: zip -ry whisperkun.zip whisperkun.app
 
       - name: Create tag and release
         if: steps.check.outputs.exists == 'false'
@@ -123,7 +123,7 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "${{ steps.ver.outputs.tag }}" \
             --generate-notes \
-            Whisperkun.zip
+            whisperkun.zip
 
       - name: Clean up keychain
         if: ${{ always() && steps.signing.outputs.present == 'true' }}

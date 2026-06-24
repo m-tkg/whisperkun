@@ -1,6 +1,6 @@
 import Foundation
 import SwiftData
-import WhisperkunCore
+import whisperkunCore
 
 /// ユーザー辞書の項目（用語の置換）。
 @Model

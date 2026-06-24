@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import WhisperkunCore
+@testable import whisperkunCore
 
 @Suite struct TimeoutTests {
     @Test("期限内に終わればその結果を返す")

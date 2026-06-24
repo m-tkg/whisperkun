@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 import Observation
-import WhisperkunCore
+import whisperkunCore
 
 /// パイプラインが後処理に使うデータ一式（SwiftDataから供給）。
 struct PipelineData: Sendable {

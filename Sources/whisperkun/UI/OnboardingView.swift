@@ -9,7 +9,7 @@ struct OnboardingView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Whisperkun へようこそ")
+                Text("whisperkun へようこそ")
                     .font(.title2.bold())
                 Text("音声入力を使うには、次の3つの権限が必要です。")
                     .foregroundStyle(.secondary)

@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import WhisperkunCore
+@testable import whisperkunCore
 
 @Suite struct VersionComparatorTests {
     @Test func 新しいパッチは新しい() {
@@ -49,12 +49,12 @@ import Testing
           "html_url": "https://example.com/r",
           "assets": [
             {"name": "notes.txt", "browser_download_url": "https://example.com/notes.txt"},
-            {"name": "Whisperkun.zip", "browser_download_url": "https://example.com/Whisperkun.zip"}
+            {"name": "whisperkun.zip", "browser_download_url": "https://example.com/whisperkun.zip"}
           ]
         }
         """.utf8)
         let info = try JSONDecoder().decode(ReleaseInfo.self, from: json)
         #expect(info.assets.count == 2)
-        #expect(info.zipAssetURL == URL(string: "https://example.com/Whisperkun.zip"))
+        #expect(info.zipAssetURL == URL(string: "https://example.com/whisperkun.zip"))
     }
 }
