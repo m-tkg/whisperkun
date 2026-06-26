@@ -124,3 +124,17 @@ base は `Localization.swift` の `L.string`/`L.format` 方式だが、**whisper
 - 新機能の追加手順: ①判定ロジックを `whisperkunCore` に純粋実装＋テスト → ②設定が要るなら `Settings` に追加 →
   ③設定 UI（タブ）を足す → ④GUI 文字列を ja/en 両方に対訳追加。
 - 一時ファイルは `.claude/tmp/` 以下に置く。
+
+## Kuntraykun 連携（実装済み）
+
+本アプリは kuntraykun（`com.mtkg.kuntraykun`）にメニューバーアイコンを集約させる連携に対応している。
+- **MenuBarExtra からの作り替え**: `MenuBarExtra` はメニューを座標指定で `popUp` する公開 API が無く、
+  kuntraykun の `showMenu`（指定座標にメニューを出す）に応えられない。そのため、メニューバーを
+  AppKit の `NSStatusItem` + `NSMenu` に作り替えた（`Sources/whisperkun/App/AppDelegate.swift`、
+  `@NSApplicationDelegateAdaptor` で接続）。設定画面は SwiftUI の `Settings` シーンのまま
+  （メニューの「設定…」は `showSettingsWindow:` で開く）。`AppState` は `AppDelegate` が保持して SwiftUI に渡す。
+- **連携本体**: `Sources/whisperkun/App/KuntraykunBridge.swift`。分散通知 `sync`/`showMenu` を観測し、
+  起動時に `appLaunched` を送信。管理対象 かつ kuntraykun 起動中なら自分のアイコンを隠し、`showMenu` で
+  自分のメニューを指定座標に `popUp` する（未起動ならフォールバック表示）。
+- 仕様: kuntraykun リポジトリ `docs/kun-integration-protocol.md`、共通方針は `../CLAUDE_base.md`「Kuntraykun 連携」。
+- 管理対象フラグは `UserDefaults`（キー `KuntraykunManaged`）に永続化する。
