@@ -14,6 +14,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private let menu = NSMenu()
     private var kuntraykunBridge: KuntraykunBridge?
+    /// 設定ウィンドウ（SwiftUI の SettingsView を自前 NSWindow にホスト）。
+    private let settingsWindowController = SettingsWindowController()
     /// 新版があるとき右下に出す赤バッジ（更新有無は AppState が集約して同期する）。
     private var updateBadgeView: NSView?
 
@@ -86,13 +88,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.removeAllItems()
 
         var versionTitle = "whisperkun \(appVersion)"
-        if isLocalBuild { versionTitle += " (ローカル)" }
+        if isLocalBuild { versionTitle += " (\(String(localized: "ローカル")))" }
         let versionItem = NSMenuItem(title: versionTitle, action: nil, keyEquivalent: "")
         versionItem.isEnabled = false
         menu.addItem(versionItem)
         menu.addItem(.separator())
 
-        let settingsItem = NSMenuItem(title: "設定…", action: #selector(openSettings), keyEquivalent: ",")
+        let settingsItem = NSMenuItem(title: String(localized: "設定…"), action: #selector(openSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
 
@@ -102,7 +104,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(updateItem)
         menu.addItem(.separator())
 
-        let quitItem = NSMenuItem(title: "whisperkun を終了", action: #selector(quit), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: String(localized: "whisperkun を終了"), action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
     }
@@ -114,17 +116,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// 新バージョンがあればインストール、なければ確認のラベル。
     private var updateTitle: String {
         if let release = appState.availableRelease {
-            return "アップデート \(release.tagName) をインストール…"
+            return String(localized: "アップデート \(release.tagName) をインストール…")
         }
-        return "アップデートを確認"
+        return String(localized: "アップデートを確認")
     }
 
     // MARK: - アクション
 
     /// SwiftUI の Settings シーンを開く（メニューバー常駐＝accessory のため前面化も行う）。
     @objc private func openSettings() {
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        NSApp.activate(ignoringOtherApps: true)
+        // SwiftUI の Settings シーンは accessory + AppKit メニュー構成では showSettingsWindow: で
+        // 開けない（true を返すが窓を生成しない）ため、SettingsView を自前の NSWindow にホストする。
+        settingsWindowController.show(appState)
     }
 
     @objc private func checkForUpdates() {

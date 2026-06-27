@@ -9,10 +9,11 @@ struct WhisperkunApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        // 設定画面は SwiftUI の Settings シーン（メニューの「設定…」が showSettingsWindow: で開く）。
+        // 設定ウィンドウは AppDelegate が SettingsView を自前 NSWindow にホストして開く
+        // （accessory + AppKit メニュー構成では SwiftUI の Settings シーンが showSettingsWindow: で
+        // 開けないため）。SwiftUI App はシーンを最低1つ要求するので、空の Settings シーンだけ置く。
         Settings {
-            SettingsView(appState: appDelegate.appState)
-                .modelContainer(appDelegate.appState.modelContainer)
+            EmptyView()
         }
     }
 }

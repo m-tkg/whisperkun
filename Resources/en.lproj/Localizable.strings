@@ -2,6 +2,7 @@
 
 /* Menu */
 "設定…" = "Settings…";
+"設定" = "Settings";
 "whisperkun を終了" = "Quit whisperkun";
 "アップデートを確認" = "Check for Updates";
 "アップデート %@ をインストール…" = "Install Update %@…";
