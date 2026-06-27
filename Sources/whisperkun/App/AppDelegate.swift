@@ -43,6 +43,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 button.imagePosition = .imageLeading
             }
         }
+        // kuntraykun 一覧用に、現在のメニューバーアイコンを共有場所へ書き出す（連携 v2）。
+        KuntraykunIconExport.export(statusItem.button?.image)
         menu.delegate = self
         statusItem.menu = menu
 
