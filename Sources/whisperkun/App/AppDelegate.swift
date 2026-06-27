@@ -47,6 +47,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         installUpdateBadge()
         appState.onUpdateAvailabilityChanged = { [weak self] available in
             self?.updateBadgeView?.isHidden = !available
+            // kuntraykun にもアップデート有無を伝える（集約バッジ/赤丸用）。
+            self?.kuntraykunBridge?.reportUpdate(available)
         }
         // 起動時チェックが既に完了している場合に取りこぼさないよう初期同期する。
         appState.onUpdateAvailabilityChanged?(appState.availableRelease != nil)
@@ -58,6 +60,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         )
         bridge.start()
         kuntraykunBridge = bridge
+        // bridge 生成前に確定していた更新状態を改めて報告する。
+        bridge.reportUpdate(appState.availableRelease != nil)
     }
 
     /// 再アクティブ化時にアイコンを貼り直す。万一フォールバック（mic.fill）になっていても、
