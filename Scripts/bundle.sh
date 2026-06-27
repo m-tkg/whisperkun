@@ -4,7 +4,7 @@
 #
 # ローカル検証用ビルド: LOCAL=1 bash Scripts/bundle.sh debug
 #   本番アプリ(com.mtkg.whisperkun)と TCC 権限が衝突しないよう、バンドルID と
-#   表示名を分けた「whisperkun (Local)」を生成する。これによりシステム設定の
+#   表示名を分けた「Whisperkun (Local)」を生成する。これによりシステム設定の
 #   権限一覧に本番と別エントリとして並び、独立して許可できる。
 #   再ビルドで権限が外れるのを避けたい場合は、安定した自己署名IDを併用する:
 #     SIGN_IDENTITY="Apple Development: ..." LOCAL=1 bash Scripts/bundle.sh debug
@@ -14,11 +14,12 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG="${1:-release}"
 LOCAL="${LOCAL:-0}"
 
-# APP_NAME は配布する .app／実行バイナリの名前（先頭大文字: Whisperkun）。
-# DISPLAY_NAME はメニュー・システム設定に出る表示名（小文字: whisperkun）。両者は分離する。
+# APP_NAME は配布する .app／実行バイナリの名前、DISPLAY_NAME は Finder・メニュー・システム設定に
+# 出る表示名（CFBundleName/CFBundleDisplayName）。どちらも先頭大文字 Whisperkun で揃える
+# （バンドルID com.mtkg.whisperkun は小文字のまま）。ローカル検証ビルドは「(Local)」を付けて区別する。
 if [[ "$LOCAL" == "1" ]]; then
   APP_NAME="Whisperkun (Local)"
-  DISPLAY_NAME="whisperkun (Local)"
+  DISPLAY_NAME="Whisperkun (Local)"
   BUNDLE_ID="com.mtkg.whisperkun.local"
 else
   APP_NAME="Whisperkun"
