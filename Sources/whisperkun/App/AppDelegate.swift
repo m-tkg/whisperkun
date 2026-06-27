@@ -1,5 +1,8 @@
 import AppKit
+import OSLog
 import SwiftUI
+
+private let logger = Logger(subsystem: "com.mtkg.whisperkun", category: "AppDelegate")
 
 /// メニューバー常駐の入口（AppKit）。
 ///
@@ -31,20 +34,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        if let button = statusItem.button {
-            if let image = Self.menuBarImage() {
-                button.image = image
-            } else {
-                button.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "whisperkun")
-            }
+        if let button = statusItem.button, isLocalBuild {
             // ローカルビルドは「ローカル」を併記して本番と区別する。
-            if isLocalBuild {
-                button.title = " ローカル"
-                button.imagePosition = .imageLeading
-            }
+            button.title = " ローカル"
+            button.imagePosition = .imageLeading
         }
-        // kuntraykun 一覧用に、現在のメニューバーアイコンを共有場所へ書き出す（連携 v2）。
-        KuntraykunIconExport.export(statusItem.button?.image)
+        applyStatusItemIcon()
         menu.delegate = self
         statusItem.menu = menu
 
@@ -63,6 +58,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         )
         bridge.start()
         kuntraykunBridge = bridge
+    }
+
+    /// 再アクティブ化時にアイコンを貼り直す。万一フォールバック（mic.fill）になっていても、
+    /// `MenuBarIcon` が読めれば本来のアイコンへ自己修復する（自己更新の再起動直後対策）。
+    func applicationDidBecomeActive(_ notification: Notification) {
+        applyStatusItemIcon()
+    }
+
+    /// ステータスアイコンを（再）設定し、kuntraykun 用にも書き出す。起動時・再アクティブ化時に呼ぶ。
+    private func applyStatusItemIcon() {
+        guard let button = statusItem?.button else { return }
+        if let image = Self.menuBarImage() {
+            button.image = image
+        } else if button.image == nil {
+            // 本来あり得ない（Resources に MenuBarIcon.png が無い）。原因切り分け用にログを残す。
+            logger.error("MenuBarIcon をバンドルから読み込めませんでした。mic.fill にフォールバックします。")
+            button.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "whisperkun")
+        }
+        // kuntraykun 一覧用に、現在のメニューバーアイコンを共有場所へ書き出す（連携 v2）。
+        KuntraykunIconExport.export(button.image)
     }
 
     /// 赤バッジ view をボタンに重ね、アイコン幅基準で右下に Auto Layout 固定する。
@@ -141,8 +156,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     /// メニューバー用テンプレート画像（アプリアイコンと同じ MenuBarIcon）。無ければ nil。
+    ///
+    /// `NSImage(named:)` は名前キャッシュ／アセット解決に依存し、自己更新による再起動直後など
+    /// 稀に nil を返して mic.fill フォールバックに化けることがある。Resources の URL から
+    /// 直接読み込むことで決定的にする（ファイルが在れば必ず読める）。
     private static func menuBarImage() -> NSImage? {
-        guard let image = NSImage(named: "MenuBarIcon") else { return nil }
+        let image: NSImage?
+        if let url = Bundle.main.url(forResource: "MenuBarIcon", withExtension: "png") {
+            image = NSImage(contentsOf: url)
+        } else {
+            image = NSImage(named: "MenuBarIcon")
+        }
+        guard let image else { return nil }
         image.size = NSSize(width: 18, height: 18)
         image.isTemplate = true
         return image
