@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import whisperkunCore
 
 /// スカラなユーザー設定を UserDefaults に保持する。
 /// コレクション（辞書/スニペット/ワークフロー/履歴）は SwiftData 側で管理する。
@@ -46,14 +47,11 @@ final class SettingsStore {
     }
 
     /// 修飾キー集合を読み込む。新キーが無ければ旧・単一キー設定から移行する。既定は空（未設定）。
+    /// 生値からの解決（移行判定）は `HotkeyModifierMigration` に委譲し、ここは読み出しのみ。
     private static func loadModifiers(from defaults: UserDefaults) -> Set<HotkeyModifier> {
-        if let raws = defaults.stringArray(forKey: Keys.hotkeyModifiers) {
-            return Set(raws.compactMap(HotkeyModifier.init(rawValue:)))
-        }
-        // 旧バージョンの単一修飾キー設定を移行。
-        if let single = defaults.string(forKey: Keys.hotkeyModifier).flatMap(HotkeyModifier.init(rawValue:)) {
-            return [single]
-        }
-        return []
+        HotkeyModifierMigration.resolve(
+            newRawValues: defaults.stringArray(forKey: Keys.hotkeyModifiers),
+            legacySingleRawValue: defaults.string(forKey: Keys.hotkeyModifier)
+        )
     }
 }

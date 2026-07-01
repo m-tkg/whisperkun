@@ -1,4 +1,5 @@
 import SwiftUI
+import whisperkunCore
 
 struct HotkeySettingsView: View {
     @Bindable var appState: AppState

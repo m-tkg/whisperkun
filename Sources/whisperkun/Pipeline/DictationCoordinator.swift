@@ -23,7 +23,6 @@ final class DictationCoordinator {
     private let ai: AIService
     private let hud: HUDController
     private let hotkey: HotkeyService
-    private let dictionary = DictionaryService()
 
     /// AI整形を行うか（ユーザー設定。既定オン）。
     var aiFormattingEnabled = true
@@ -156,15 +155,12 @@ final class DictationCoordinator {
         }
     }
 
-    /// 確定テキストの後処理パイプライン: 辞書置換 → AI整形。
+    /// 確定テキストの後処理パイプライン: trim → 辞書置換 → AI整形。
+    /// 辞書を AI より前に適用する（AI に正しい語を見せる）順序は `TranscriptPostProcessor` が固定する。
     private func process(_ text: String) async -> String {
-        var result = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !result.isEmpty else { return "" }
+        guard var result = TranscriptPostProcessor.prepare(text, rules: dictionaryRules) else { return "" }
 
-        // 1. 辞書で用語を補正（AIに正しい語を見せるため整形より前）。
-        result = dictionary.apply(result, rules: dictionaryRules)
-
-        // 2. AI整形（既定の軽整形）。整形中は HUD にスピナーを表示。
+        // AI整形（既定の軽整形）。整形中は HUD にスピナーを表示。
         if aiFormattingEnabled {
             hud.state.isFormatting = true
             result = await ai.format(result)

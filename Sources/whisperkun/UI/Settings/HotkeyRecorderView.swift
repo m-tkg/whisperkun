@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import whisperkunCore
 
 /// 修飾キー（左右の Command/Option/Control/Shift）の組み合わせを「押して記録」する NSView。
 ///
