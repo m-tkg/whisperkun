@@ -2,7 +2,7 @@ import Foundation
 import OSLog
 import whisperkunCore
 
-private let log = Logger(subsystem: "com.mtkg.whisperkun", category: "update")
+private let log = Log.logger(category: "update")
 
 /// 外部プロセスを起動し、終了を待って標準出力を返す簡易ランナー（`.app` 展開の ditto などに使用）。
 enum ProcessRunner {
@@ -75,11 +75,6 @@ struct UpdateService {
                 return String(localized: "ダウンロードに失敗しました（HTTP \(code)）。")
             }
         }
-    }
-
-    /// 現在のアプリバージョン（CFBundleShortVersionString）。
-    static var currentVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
     }
 
     /// 最新リリース情報を取得する。

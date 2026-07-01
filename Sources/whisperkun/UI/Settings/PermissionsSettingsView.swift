@@ -37,8 +37,8 @@ struct PermissionsSettingsView: View {
     @ViewBuilder
     private func permissionRow(title: LocalizedStringKey, state: PermissionState, action: @escaping () -> Void) -> some View {
         HStack {
-            Image(systemName: symbol(for: state))
-                .foregroundStyle(color(for: state))
+            Image(systemName: state.symbolName)
+                .foregroundStyle(state.indicatorColor)
             Text(title)
             Spacer()
             if state != .granted {
@@ -49,9 +49,11 @@ struct PermissionsSettingsView: View {
     }
 
     private var accessibilityRow: some View {
-        HStack {
-            Image(systemName: appState.permissions.accessibilityGranted ? "checkmark.circle.fill" : "xmark.circle")
-                .foregroundStyle(appState.permissions.accessibilityGranted ? .green : .red)
+        // アクセシビリティは付与/未付与の2値（PermissionsManager 参照）。未付与は denied として表示する。
+        let state: PermissionState = appState.permissions.accessibilityGranted ? .granted : .denied
+        return HStack {
+            Image(systemName: state.symbolName)
+                .foregroundStyle(state.indicatorColor)
             Text("アクセシビリティ")
             Spacer()
             if !appState.permissions.accessibilityGranted {
@@ -64,19 +66,4 @@ struct PermissionsSettingsView: View {
         }
     }
 
-    private func symbol(for state: PermissionState) -> String {
-        switch state {
-        case .granted: return "checkmark.circle.fill"
-        case .denied: return "xmark.circle"
-        case .notDetermined: return "questionmark.circle"
-        }
-    }
-
-    private func color(for state: PermissionState) -> Color {
-        switch state {
-        case .granted: return .green
-        case .denied: return .red
-        case .notDetermined: return .secondary
-        }
-    }
 }

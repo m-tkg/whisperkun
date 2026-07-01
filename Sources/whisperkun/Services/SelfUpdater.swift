@@ -2,7 +2,7 @@ import AppKit
 import OSLog
 import whisperkunCore
 
-private let logger = Logger(subsystem: "com.mtkg.whisperkun", category: "SelfUpdater")
+private let logger = Log.logger(category: "SelfUpdater")
 
 /// 最新リリースの zip をダウンロード・展開し、起動中の `.app` を上書きして再起動する。
 ///
@@ -65,7 +65,7 @@ final class SelfUpdater {
         // 基底ID（`.local` を除いたID）で比較する。これによりローカル検証ビルド
         // （`*.local`）からも本番リリースへ自己更新できる。
         guard let newBundleID = Bundle(url: newApp)?.bundleIdentifier,
-              Self.baseBundleID(newBundleID) == Self.baseBundleID(Bundle.main.bundleIdentifier) else {
+              BundleIdentity.baseID(newBundleID) == BundleIdentity.baseID(Bundle.main.bundleIdentifier) else {
             throw UpdateError.bundleIDMismatch
         }
 
@@ -76,12 +76,6 @@ final class SelfUpdater {
     }
 
     // MARK: - 補助
-
-    /// `.local` サフィックスを除いた基底バンドルID。ローカル検証ビルドと本番を同一視するために使う。
-    static func baseBundleID(_ id: String?) -> String? {
-        guard let id else { return nil }
-        return id.hasSuffix(".local") ? String(id.dropLast(".local".count)) : id
-    }
 
     private func ensureWritable(_ bundleURL: URL) throws {
         let fm = FileManager.default

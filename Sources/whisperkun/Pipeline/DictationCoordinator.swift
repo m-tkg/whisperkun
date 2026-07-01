@@ -4,7 +4,7 @@ import Observation
 import OSLog
 import whisperkunCore
 
-private let coordLog = Logger(subsystem: "com.mtkg.whisperkun", category: "coordinator")
+private let coordLog = Log.logger(category: "coordinator")
 
 /// パイプラインが後処理に使うデータ一式（SwiftDataから供給）。
 struct PipelineData: Sendable {

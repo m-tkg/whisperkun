@@ -136,14 +136,14 @@ final class AppState {
         Task { @MainActor in
             do {
                 let release = try await updateService.fetchLatestRelease()
-                if VersionComparator.isNewer(tag: release.tagName, than: UpdateService.currentVersion) {
+                if VersionComparator.isNewer(tag: release.tagName, than: AppInfo.version) {
                     setAvailableRelease(release)
                     if interactive { promptInstall(release) }
                 } else {
                     setAvailableRelease(nil)
                     if interactive {
                         showAlert(title: String(localized: "最新です"),
-                                  message: String(localized: "現在のバージョン \(UpdateService.currentVersion) が最新です。"))
+                                  message: String(localized: "現在のバージョン \(AppInfo.version) が最新です。"))
                     }
                 }
             } catch {
@@ -159,7 +159,7 @@ final class AppState {
     private func promptInstall(_ release: ReleaseInfo) {
         let alert = NSAlert()
         alert.messageText = String(localized: "新しいバージョン \(release.tagName) があります")
-        alert.informativeText = String(localized: "現在のバージョン: \(UpdateService.currentVersion)\nインストールするとアプリを再起動します。")
+        alert.informativeText = String(localized: "現在のバージョン: \(AppInfo.version)\nインストールするとアプリを再起動します。")
         alert.addButton(withTitle: String(localized: "更新"))
         alert.addButton(withTitle: String(localized: "リリースページを開く"))
         alert.addButton(withTitle: String(localized: "キャンセル"))

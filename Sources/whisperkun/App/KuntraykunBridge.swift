@@ -1,7 +1,8 @@
 import AppKit
 import OSLog
+import whisperkunCore
 
-private let log = Logger(subsystem: "com.mtkg.whisperkun", category: "kuntraykun")
+private let log = Log.logger(category: "kuntraykun")
 
 /// kuntraykun（`com.mtkg.kuntraykun`）に「まとめられる」ための連携ブリッジ。
 ///
@@ -42,8 +43,7 @@ final class KuntraykunBridge {
     init(setHidden: @escaping (Bool) -> Void, popUpMenu: @escaping (NSPoint) -> Void) {
         self.setHidden = setHidden
         self.popUpMenu = popUpMenu
-        let raw = Bundle.main.bundleIdentifier ?? ""
-        self.myBundleID = raw.hasSuffix(".local") ? String(raw.dropLast(".local".count)) : raw
+        self.myBundleID = BundleIdentity.baseID(Bundle.main.bundleIdentifier) ?? ""
         self.isManaged = UserDefaults.standard.bool(forKey: Self.managedDefaultsKey)
     }
 
