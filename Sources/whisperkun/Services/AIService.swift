@@ -51,23 +51,21 @@ final class AIService {
 
     /// 録音開始時に呼び、整形用セッションを事前に読み込む（レイテンシ低減）。
     /// 確定後に `format` で同じ指示が使われる前提。利用不可なら何もしない。
-    func prewarm(instructions: String? = nil) {
+    func prewarm() {
         guard isAvailable else { return }
-        let session = LanguageModelSession(instructions: instructions ?? Self.defaultFormattingInstructions)
+        let session = LanguageModelSession(instructions: Self.defaultFormattingInstructions)
         session.prewarm()
         preparedSession = session
     }
 
     /// テキストを整形して返す。利用不可・失敗時は元テキストをそのまま返す。
-    /// - Parameters:
-    ///   - text: 整形対象（音声認識の確定テキスト）。
-    ///   - instructions: ワークフロー固有の指示。nil なら既定の軽整形を使う。
-    func format(_ text: String, instructions: String? = nil) async -> String {
+    /// - Parameter text: 整形対象（音声認識の確定テキスト）。
+    func format(_ text: String) async -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, isAvailable else { return text }
 
         // prewarm 済みセッションがあれば使い回す（1回限り）。無ければ都度生成。
-        let session = preparedSession ?? LanguageModelSession(instructions: instructions ?? Self.defaultFormattingInstructions)
+        let session = preparedSession ?? LanguageModelSession(instructions: Self.defaultFormattingInstructions)
         preparedSession = nil
 
         // 入力を「整形対象データ」として枠付けし、質問形でも回答されないようにする。

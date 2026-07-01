@@ -93,10 +93,6 @@ final class AppState {
         }
     }
 
-    func toggleRecording() {
-        dictation.toggle()
-    }
-
     // MARK: - アップデート
 
     /// メニューの「アップデートを確認」から呼ぶ（結果をダイアログ表示）。

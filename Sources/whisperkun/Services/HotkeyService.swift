@@ -61,24 +61,6 @@ enum HotkeyModifier: String, CaseIterable, Codable {
         }
     }
 
-    /// グリフ記号（⌃⌥⇧⌘）。左右の区別は付かないため表示は displayName を優先する。
-    var glyph: String {
-        switch self {
-        case .leftControl, .rightControl: return "⌃"
-        case .leftOption, .rightOption: return "⌥"
-        case .leftShift, .rightShift: return "⇧"
-        case .leftCommand, .rightCommand: return "⌘"
-        }
-    }
-
-    /// 左側の修飾キーか。
-    var isLeft: Bool {
-        switch self {
-        case .leftControl, .leftOption, .leftShift, .leftCommand: return true
-        default: return false
-        }
-    }
-
     /// `flagsChanged` イベントの仮想キーコードから修飾キーを判定する。非修飾キーは nil。
     init?(keyCode: UInt16) {
         switch keyCode {
@@ -111,11 +93,6 @@ enum HotkeyModifier: String, CaseIterable, Codable {
     /// 修飾キー集合の表示名（例: "左 Shift + 右 Command"）。空なら空文字。
     static func displayName(for set: Set<HotkeyModifier>) -> String {
         set.sorted { $0.sortOrder < $1.sortOrder }.map(\.displayName).joined(separator: " + ")
-    }
-
-    /// 修飾キー集合のグリフ表記（例: "⇧⌘"。左右は区別されない）。
-    static func glyphs(for set: Set<HotkeyModifier>) -> String {
-        set.sorted { $0.sortOrder < $1.sortOrder }.map(\.glyph).joined()
     }
 
     /// 集合の device マスクの論理和。

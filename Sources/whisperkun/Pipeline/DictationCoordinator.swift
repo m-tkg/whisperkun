@@ -13,7 +13,7 @@ struct PipelineData: Sendable {
 
 /// ディクテーションの一連の流れを統括する。
 ///
-/// ホットキー（または手動トグル）→ 録音/文字起こし → HUD表示 → 確定テキストの挿入、
+/// ホットキー → 録音/文字起こし → HUD表示 → 確定テキストの挿入、
 /// という流れを束ねる。確定〜挿入の間に辞書置換とAI整形を差し込む。
 @MainActor
 @Observable
@@ -92,7 +92,6 @@ final class DictationCoordinator {
     }
 
     var hotkeyInstalled: Bool { hotkey.isInstalled }
-    var isRecording: Bool { transcription.isRunning }
 
     /// ホットキーの方式と修飾キーを反映する。`modifiers` が空なら監視を停止する。
     /// （設定がある場合の監視開始は権限を知る AppState 側で行う。）
@@ -101,21 +100,6 @@ final class DictationCoordinator {
         hotkey.modifiers = modifiers
         if modifiers.isEmpty {
             hotkey.uninstall()
-        }
-    }
-
-    /// ホットキーが設定済みか（修飾キーが割り当てられているか）。
-    var hotkeyConfigured: Bool { !hotkey.modifiers.isEmpty }
-
-    /// 現在割り当てられている修飾キーの組み合わせ（未設定なら空）。
-    var hotkeyModifiers: Set<HotkeyModifier> { hotkey.modifiers }
-
-    /// 手動トグル（メニューバーから / ホットキーのトグル方式と等価）。
-    func toggle() {
-        if isActive {
-            end()
-        } else {
-            begin()
         }
     }
 
