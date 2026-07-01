@@ -52,8 +52,8 @@ final class TranscriptionService {
     private var inputContinuation: AsyncStream<AnalyzerInput>.Continuation?
     private var resultsTask: Task<Void, Never>?
 
-    /// 確定済みテキスト（isFinal の結果を連結したもの）。
-    private var finalizedText = AttributedString()
+    /// 認識結果（確定/暫定）からのテキスト組み立て（純ロジックは Core 側）。
+    private var assembler = TranscriptAssembler()
 
     /// セッションの世代。beginSession で進め、stop でも進める。
     /// 進行中の runSession は自分の世代と一致しなくなったら中断して .listening へ遷移しない。
@@ -76,7 +76,7 @@ final class TranscriptionService {
         generation += 1
         phase = .preparing
         liveText = ""
-        finalizedText = AttributedString()
+        assembler = TranscriptAssembler()
         return generation
     }
 
@@ -164,7 +164,7 @@ final class TranscriptionService {
     func stop() async -> String {
         // 進行中の runSession を無効化する（preparing 中でも .listening 化を止める）。
         generation += 1
-        guard isRunning else { return String(finalizedText.characters) }
+        guard isRunning else { return assembler.finalizedText }
 
         // どの経路で抜けても必ずリソースを解放し phase を idle に戻す（「認識中」固着の保険）。
         // 現状 engine.stop()/removeTap は throws ではないが、将来の早期 return / await
@@ -187,8 +187,7 @@ final class TranscriptionService {
         let finished = await finishWithTimeout(seconds: 1.0)
 
         // 正常確定なら確定テキスト、タイムアウト時は暫定込みの表示テキストで代替する。
-        let finalized = String(finalizedText.characters)
-        return finished ? finalized : (finalized.isEmpty ? liveText : finalized)
+        return assembler.finalText(finished: finished)
     }
 
     /// 確定処理（finalize＋結果購読の完了）を待つ。期限内に終われば true、超過なら false。
@@ -213,13 +212,9 @@ final class TranscriptionService {
     }
 
     private func apply(text: AttributedString, isFinal: Bool) {
-        if isFinal {
-            finalizedText += text
-            liveText = String(finalizedText.characters)
-        } else {
-            // 暫定結果は確定済みの後ろに付けて表示する（確定はまだしない）。
-            liveText = String((finalizedText + text).characters)
-        }
+        // 属性は使わないため String に落として組み立てる（組み立て規則は Core 側でテスト済み）。
+        assembler.apply(text: String(text.characters), isFinal: isFinal)
+        liveText = assembler.liveText
     }
 
     private func cleanup() {

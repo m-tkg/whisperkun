@@ -12,13 +12,19 @@ public struct TranscriptAssembler: Sendable, Equatable {
 
     /// 認識結果を1件取り込み、表示用テキストを更新する。
     public mutating func apply(text: String, isFinal: Bool) {
-        fatalError("未実装")
+        if isFinal {
+            finalizedText += text
+            liveText = finalizedText
+        } else {
+            // 暫定結果は確定済みの後ろに付けて表示する（確定はまだしない）。
+            liveText = finalizedText + text
+        }
     }
 
     /// 停止時に返す確定テキスト。
     /// 正常確定（finished）なら確定テキスト、タイムアウト時は暫定込みの表示テキストで代替する
     /// （確定が空でなければ確定を優先。内容が欠けないためのフォールバック）。
     public func finalText(finished: Bool) -> String {
-        fatalError("未実装")
+        finished ? finalizedText : (finalizedText.isEmpty ? liveText : finalizedText)
     }
 }
