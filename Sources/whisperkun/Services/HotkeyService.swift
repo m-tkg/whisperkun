@@ -2,7 +2,7 @@ import AppKit
 import CoreGraphics
 import OSLog
 
-private let hkLog = Logger(subsystem: "com.mtkg.whisperkun", category: "hotkey")
+private let hkLog = Log.logger(category: "hotkey")
 
 /// ホットキーの起動方式。
 enum HotkeyMode: String, CaseIterable, Codable {

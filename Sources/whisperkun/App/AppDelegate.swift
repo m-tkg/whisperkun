@@ -1,8 +1,9 @@
 import AppKit
 import OSLog
 import SwiftUI
+import whisperkunCore
 
-private let logger = Logger(subsystem: "com.mtkg.whisperkun", category: "AppDelegate")
+private let logger = Log.logger(category: "AppDelegate")
 
 /// メニューバー常駐の入口（AppKit）。
 ///
@@ -29,7 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     /// ローカル検証ビルド（バンドルID が `.local`）かどうか。
     private var isLocalBuild: Bool {
-        (Bundle.main.bundleIdentifier ?? "").hasSuffix(".local")
+        BundleIdentity.isLocal(Bundle.main.bundleIdentifier)
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -108,7 +109,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
-        var versionTitle = "whisperkun \(appVersion)"
+        var versionTitle = "whisperkun \(AppInfo.version)"
         if isLocalBuild { versionTitle += " (\(String(localized: "ローカル")))" }
         let versionItem = NSMenuItem(title: versionTitle, action: nil, keyEquivalent: "")
         versionItem.isEnabled = false
@@ -128,10 +129,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let quitItem = NSMenuItem(title: String(localized: "whisperkun を終了"), action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
-    }
-
-    private var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
     }
 
     /// 新バージョンがあればインストール、なければ確認のラベル。

@@ -1,4 +1,5 @@
 import AppKit
+import whisperkunCore
 
 /// 自分の現在のメニューバーアイコンを kuntraykun 用の共有場所に書き出す（連携プロトコル v2）。
 ///
@@ -11,8 +12,7 @@ enum KuntraykunIconExport {
 
     /// `.local` を除いた基底 bundle ID。
     private static var baseBundleID: String {
-        let raw = Bundle.main.bundleIdentifier ?? ""
-        return raw.hasSuffix(".local") ? String(raw.dropLast(".local".count)) : raw
+        BundleIdentity.baseID(Bundle.main.bundleIdentifier) ?? ""
     }
 
     private static var dir: URL? {
