@@ -111,14 +111,16 @@ base は `Localization.swift` の `L.string`/`L.format` 方式だが、**whisper
 
 ## リリース運用
 
-- `main` への push で `.github/workflows/release.yml` が走り、`Resources/Info.plist` の
-  `CFBundleShortVersionString` から `v<version>` を作成する（Secrets があれば Developer ID 署名＋公証、
-  無ければ ad-hoc 署名・公証スキップにフォールバック）。
+- リリース用 Actions（`.github/workflows/release.yml`）は `v*` タグの push で発火する。
+  `Resources/Info.plist` の `CFBundleShortVersionString` を上げて `main` にマージした後、
+  `make release-tag` でタグを作成・push すると CI がビルド・署名・公証してリリースを自動作成する
+  （Secrets があれば Developer ID 署名＋公証、無ければ ad-hoc 署名・公証スキップにフォールバック）。
+  **`main` へのマージだけではリリースされない**。
 - リリースしたいときだけ Info.plist のバージョンを上げる。CI ランナーは macOS 26 専用 API（FoundationModels /
   Speech）のため `runs-on: macos-26`。
-- **バージョンを上げる PR は1つずつ、Release ワークフロー完了を待ってから次をマージ**する。
-  複数を相次いでマージすると、CI 完了順の影響で古いタグが「Latest」を奪うことがある
-  （その場合は `gh release edit v<latest> --latest` で修正）。
+- `make release-tag` は main の最新かつクリーンな状態であることを確認してからタグを作成・push する
+  （main ブランチにいること／作業ツリーがクリーンであること／`origin/main` と一致していること／
+  タグがまだ存在しないことを確認し、満たさなければエラーで止まる）。
 - **配布署名/公証の Secrets（計6つ）** は上位の `setup-release-secrets.sh` で一括登録する:
   ```sh
   ~/git/github.com/m-tkg/setup-release-secrets.sh -r m-tkg/whisperkun
@@ -128,7 +130,9 @@ base は `Localization.swift` の `L.string`/`L.format` 方式だが、**whisper
 
 ## 開発フロー
 
-- **`main` へ直接コミット/push しない**。変更は必ず PR 経由（`gh pr create`）。main への push はリリースに直結する。
+- **`main` へ直接コミット/push しない**。変更は必ず PR 経由（`gh pr create`）。
+  リリース用 Actions は `v*` タグの push で発火するため、main への push（マージ）自体がリリースに
+  直結することはない。リリースするときは明示的に `make release-tag` を実行する。
 - 作業ブランチは**必ず最新の `main` から切る**:
   `git fetch origin && git switch main && git pull --ff-only`（または `git fetch && git switch -c <branch> origin/main`）。
 - **PR 作成後に追加修正するときは、まず `gh pr view <番号> --json state,mergedAt` でマージ済みでないか確認する**。
