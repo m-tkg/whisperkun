@@ -26,6 +26,23 @@ import Testing
         #expect(HotkeyModifier(keyCode: 62) == .rightControl)
     }
 
+    @Test func keyCodeは仮想キーコードの逆引きになる() {
+        #expect(HotkeyModifier.rightCommand.keyCode == 54)
+        #expect(HotkeyModifier.leftCommand.keyCode == 55)
+        #expect(HotkeyModifier.leftShift.keyCode == 56)
+        #expect(HotkeyModifier.leftOption.keyCode == 58)
+        #expect(HotkeyModifier.leftControl.keyCode == 59)
+        #expect(HotkeyModifier.rightShift.keyCode == 60)
+        #expect(HotkeyModifier.rightOption.keyCode == 61)
+        #expect(HotkeyModifier.rightControl.keyCode == 62)
+    }
+
+    @Test func keyCodeとinitはラウンドトリップする() {
+        for modifier in HotkeyModifier.allCases {
+            #expect(HotkeyModifier(keyCode: modifier.keyCode) == modifier)
+        }
+    }
+
     @Test func 非修飾キーのキーコードはnil() {
         #expect(HotkeyModifier(keyCode: 0) == nil)    // A
         #expect(HotkeyModifier(keyCode: 53) == nil)   // Escape
