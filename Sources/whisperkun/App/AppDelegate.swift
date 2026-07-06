@@ -76,6 +76,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         updateItem.target = self
         updateItem.isEnabled = !appState.updates.isUpdating
         menu.addItem(updateItem)
+
+        let diagnosticsItem = NSMenuItem(title: String(localized: "診断ログを書き出す…"), action: #selector(exportDiagnostics), keyEquivalent: "")
+        diagnosticsItem.target = self
+        menu.addItem(diagnosticsItem)
         menu.addItem(.separator())
 
         let quitItem = NSMenuItem(title: String(localized: "whisperkun を終了"), action: #selector(quit), keyEquivalent: "q")
@@ -102,6 +106,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func checkForUpdates() {
         appState.updates.checkForUpdates()
+    }
+
+    @objc private func exportDiagnostics() {
+        DiagnosticsExporter.export()
     }
 
     @objc private func quit() {
