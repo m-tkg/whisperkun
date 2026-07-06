@@ -65,6 +65,11 @@ final class DictationCoordinator {
         hotkey.onStart = { [weak self] in self?.begin() }
         hotkey.onStop = { [weak self] in self?.end() }
         hud.onCancel = { [weak self] in self?.cancel() }
+        // 固着診断の long-hold スナップショット（HotkeyService）に載せるパイプライン状態。
+        hotkey.stateSnapshotProvider = { [weak self] in
+            guard let self else { return "coordinator=nil" }
+            return "phase=\(self.transcription.phase) gen=\(self.transcription.generation) isActive=\(self.isActive) isFinishing=\(self.isFinishing)"
+        }
     }
 
     /// HUD の中止ボタンから呼ぶ。録音を強制停止し、確定テキストは破棄して状態をリセットする。

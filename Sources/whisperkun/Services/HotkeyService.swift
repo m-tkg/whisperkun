@@ -20,6 +20,8 @@ final class HotkeyService {
     var onStart: (() -> Void)?
     /// PTTで解放 / トグルで停止したいとき。
     var onStop: (() -> Void)?
+    /// 診断スナップショットに載せる外部状態（coordinator の phase 等）の提供元。
+    var stateSnapshotProvider: (() -> String)?
 
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
@@ -30,6 +32,13 @@ final class HotkeyService {
     private var releaseWatchTask: Task<Void, Never>?
     /// 解放取りこぼし監視の間隔。
     private let releaseWatchInterval = Duration.milliseconds(250)
+    /// releaseWatch の開始時刻と経過 tick 数（長時間押下スナップショットの基準）。
+    private var releaseWatchStartedAt: Date?
+    private var releaseWatchTickCount = 0
+    /// 押下がこの時間を超えて続いたら、固着診断用のスナップショットを定期的に残す。
+    private let longHoldSnapshotThreshold: TimeInterval = 15
+    /// スナップショットを出す間隔（tick 数）。250ms × 8 = 2秒ごと。
+    private let longHoldSnapshotStride = 8
 
     var isInstalled: Bool { eventTap != nil }
 
@@ -98,10 +107,10 @@ final class HotkeyService {
         // 稀に false を返し releaseWatch から onStop を誤発火（喋っている途中でウィンドウが閉じる）
         // したため flagsState 判定へ戻した。keyState 化を再挑戦する場合は実機で hold 中の
         // 挙動を必ず検証すること（[[listening-stuck-keystate-regression]]）。
-        let current = CGEventSource.flagsState(.combinedSessionState).rawValue
+        let observation = observeKeyStates()
         let classMask = HotkeyModifier.combinedClassMask(modifiers)
-        let isDown = (current & classMask) == classMask
-        hkLog.debug("reconcile: flags=\(current, privacy: .public) classMask=\(classMask, privacy: .public) isDown=\(isDown, privacy: .public) modifierIsDown=\(self.modifierIsDown, privacy: .public)")
+        let isDown = (observation.flags & classMask) == classMask
+        hkLog.debug("reconcile: flags=\(observation.flags, privacy: .public) classMask=\(classMask, privacy: .public) isDown=\(isDown, privacy: .public) modifierIsDown=\(self.modifierIsDown, privacy: .public) keys=[\(observation.keysDescription, privacy: .public)]")
         applyDownState(isDown)
     }
 
@@ -136,11 +145,15 @@ final class HotkeyService {
     /// 解放を取りこぼしても（特に重い準備中）、ここで実状態に追従して確実に停止させる。
     private func startReleaseWatch() {
         releaseWatchTask?.cancel()
+        releaseWatchStartedAt = Date()
+        releaseWatchTickCount = 0
         releaseWatchTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: self?.releaseWatchInterval ?? .milliseconds(250))
                 guard let self, !Task.isCancelled else { return }
                 // @MainActor を継承。差分があれば applyDownState 経由で onStop が走り、監視も止まる。
+                self.releaseWatchTickCount += 1
+                self.logLongHoldSnapshotIfNeeded()
                 self.reconcileModifierState()
             }
         }
@@ -149,6 +162,54 @@ final class HotkeyService {
     private func stopReleaseWatch() {
         releaseWatchTask?.cancel()
         releaseWatchTask = nil
+        releaseWatchStartedAt = nil
+        releaseWatchTickCount = 0
+    }
+
+    // MARK: - 固着診断
+
+    /// 診断用のキー実状態の観測値。判定には使わず、ログにのみ載せる。
+    ///
+    /// `flagsState`（集約フラグ）が解放後も幽霊的に down を返して「認識中」固着する事象の
+    /// 事後診断のため、`keyState` の session/HID 両ストアの物理キー状態を併記する。
+    /// keyState は hold 中に稀に false を返すことがあるため判定には使わない
+    /// （[[listening-stuck-keystate-regression]]）。
+    private struct KeyStateObservation {
+        var flags: UInt64
+        /// 監視中の各修飾キーの (keyCode, session ストア, HID ストア) の押下状態。
+        var perKey: [(keyCode: UInt16, session: Bool, hid: Bool)]
+
+        /// 例: `59:s1h1 54:s0h0`（s=combinedSessionState, h=hidSystemState, 1=down）。
+        var keysDescription: String {
+            perKey
+                .map { "\($0.keyCode):s\($0.session ? 1 : 0)h\($0.hid ? 1 : 0)" }
+                .joined(separator: " ")
+        }
+    }
+
+    private func observeKeyStates() -> KeyStateObservation {
+        let flags = CGEventSource.flagsState(.combinedSessionState).rawValue
+        let perKey = modifiers.sorted { $0.sortOrder < $1.sortOrder }.map { modifier in
+            let key = CGKeyCode(modifier.keyCode)
+            return (
+                keyCode: modifier.keyCode,
+                session: CGEventSource.keyState(.combinedSessionState, key: key),
+                hid: CGEventSource.keyState(.hidSystemState, key: key)
+            )
+        }
+        return KeyStateObservation(flags: flags, perKey: perKey)
+    }
+
+    /// 押下が長く続いているとき、固着診断用のスナップショットを定期的に残す。
+    /// 「認識中」固着が起きた時間帯の flags/keyState/コーディネータ状態を事後に確定できる。
+    private func logLongHoldSnapshotIfNeeded() {
+        guard let startedAt = releaseWatchStartedAt else { return }
+        let elapsed = Date().timeIntervalSince(startedAt)
+        guard elapsed >= longHoldSnapshotThreshold,
+              releaseWatchTickCount % longHoldSnapshotStride == 0 else { return }
+        let observation = observeKeyStates()
+        let external = stateSnapshotProvider?() ?? "-"
+        hkLog.info("long-hold: tick=\(self.releaseWatchTickCount, privacy: .public) elapsed=\(Int(elapsed), privacy: .public)s flags=\(observation.flags, privacy: .public) keys=[\(observation.keysDescription, privacy: .public)] modifierIsDown=\(self.modifierIsDown, privacy: .public) \(external, privacy: .public)")
     }
 }
 

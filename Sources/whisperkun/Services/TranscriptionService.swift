@@ -59,6 +59,9 @@ final class TranscriptionService {
 
     var isRunning: Bool { session.isRunning }
 
+    /// 現在のセッション世代（診断スナップショット用の読み取り専用公開）。
+    var generation: Int { session.generation }
+
     /// 状態機械の phase を公開プロパティへ反映する（didSet の遷移ログもここで発火する）。
     private func syncPhase() {
         phase = session.phase
