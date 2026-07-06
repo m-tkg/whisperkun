@@ -30,8 +30,9 @@ final class HotkeyService {
 
     /// PTT 押下中に実状態を定期確認する監視タスク。解放イベントを取りこぼしても固着しないための保険。
     private var releaseWatchTask: Task<Void, Never>?
-    /// 解放取りこぼし監視の間隔。
-    private let releaseWatchInterval = Duration.milliseconds(250)
+    /// 解放取りこぼし監視の間隔（秒）。stuck 検出の tick 換算とスリープの両方で使う。
+    private static let releaseWatchIntervalSeconds: TimeInterval = 0.25
+    private let releaseWatchInterval = Duration.seconds(HotkeyService.releaseWatchIntervalSeconds)
     /// releaseWatch の開始時刻と経過 tick 数（長時間押下スナップショットの基準）。
     private var releaseWatchStartedAt: Date?
     private var releaseWatchTickCount = 0
@@ -39,6 +40,15 @@ final class HotkeyService {
     private let longHoldSnapshotThreshold: TimeInterval = 15
     /// スナップショットを出す間隔（tick 数）。250ms × 8 = 2秒ごと。
     private let longHoldSnapshotStride = 8
+
+    /// flagsState 幽霊 down 固着の検出器。独立2ストア（session/HID の keyState）が
+    /// この時間だけ連続して解放を示したら解放とみなす。keyState の過渡的な false
+    /// （[[listening-stuck-keystate-regression]]）で誤発火しないよう十分長くとる。
+    private static let stuckReleaseDuration: TimeInterval = 3.0
+    private var stuckDetector = ReleaseStuckDetector(
+        requiredDuration: HotkeyService.stuckReleaseDuration,
+        tickInterval: HotkeyService.releaseWatchIntervalSeconds
+    )
 
     var isInstalled: Bool { eventTap != nil }
 
@@ -98,7 +108,7 @@ final class HotkeyService {
     /// 修飾キーを解放すると、その `flagsChanged` が届かず `modifierIsDown` が押下のまま
     /// 固着し、PTT で「認識中のまま止まらない」状態になる。再有効化の直後に現在の
     /// 修飾キー実状態を読み直し、押下状態の差分があればハンドラを発火して同期する。
-    fileprivate func reconcileModifierState() {
+    fileprivate func reconcileModifierState(_ observed: KeyStateObservation? = nil) {
         guard !modifiers.isEmpty else { return }
         // `CGEventSource.flagsState` は device-dependent ビットを返さないことがあるため、
         // 左右を畳んだクラスマスクで「今も押されているか」を判定する（固着の確実な解消を優先）。
@@ -107,7 +117,7 @@ final class HotkeyService {
         // 稀に false を返し releaseWatch から onStop を誤発火（喋っている途中でウィンドウが閉じる）
         // したため flagsState 判定へ戻した。keyState 化を再挑戦する場合は実機で hold 中の
         // 挙動を必ず検証すること（[[listening-stuck-keystate-regression]]）。
-        let observation = observeKeyStates()
+        let observation = observed ?? observeKeyStates()
         let classMask = HotkeyModifier.combinedClassMask(modifiers)
         let isDown = (observation.flags & classMask) == classMask
         hkLog.debug("reconcile: flags=\(observation.flags, privacy: .public) classMask=\(classMask, privacy: .public) isDown=\(isDown, privacy: .public) modifierIsDown=\(self.modifierIsDown, privacy: .public) keys=[\(observation.keysDescription, privacy: .public)]")
@@ -147,14 +157,19 @@ final class HotkeyService {
         releaseWatchTask?.cancel()
         releaseWatchStartedAt = Date()
         releaseWatchTickCount = 0
+        stuckDetector.reset()
         releaseWatchTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: self?.releaseWatchInterval ?? .milliseconds(250))
                 guard let self, !Task.isCancelled else { return }
                 // @MainActor を継承。差分があれば applyDownState 経由で onStop が走り、監視も止まる。
                 self.releaseWatchTickCount += 1
-                self.logLongHoldSnapshotIfNeeded()
-                self.reconcileModifierState()
+                let observation = self.observeKeyStates()
+                self.logLongHoldSnapshotIfNeeded(observation)
+                self.reconcileModifierState(observation)
+                // 通常経路（flags が解放を示した）で stop 済みなら監視は止まっている。
+                guard !Task.isCancelled else { return }
+                self.recordStuckTick(observation)
             }
         }
     }
@@ -164,6 +179,7 @@ final class HotkeyService {
         releaseWatchTask = nil
         releaseWatchStartedAt = nil
         releaseWatchTickCount = 0
+        stuckDetector.reset()
     }
 
     // MARK: - 固着診断
@@ -174,7 +190,7 @@ final class HotkeyService {
     /// 事後診断のため、`keyState` の session/HID 両ストアの物理キー状態を併記する。
     /// keyState は hold 中に稀に false を返すことがあるため判定には使わない
     /// （[[listening-stuck-keystate-regression]]）。
-    private struct KeyStateObservation {
+    fileprivate struct KeyStateObservation {
         var flags: UInt64
         /// 監視中の各修飾キーの (keyCode, session ストア, HID ストア) の押下状態。
         var perKey: [(keyCode: UInt16, session: Bool, hid: Bool)]
@@ -202,14 +218,36 @@ final class HotkeyService {
 
     /// 押下が長く続いているとき、固着診断用のスナップショットを定期的に残す。
     /// 「認識中」固着が起きた時間帯の flags/keyState/コーディネータ状態を事後に確定できる。
-    private func logLongHoldSnapshotIfNeeded() {
+    private func logLongHoldSnapshotIfNeeded(_ observation: KeyStateObservation) {
         guard let startedAt = releaseWatchStartedAt else { return }
         let elapsed = Date().timeIntervalSince(startedAt)
         guard elapsed >= longHoldSnapshotThreshold,
               releaseWatchTickCount % longHoldSnapshotStride == 0 else { return }
-        let observation = observeKeyStates()
         let external = stateSnapshotProvider?() ?? "-"
         hkLog.info("long-hold: tick=\(self.releaseWatchTickCount, privacy: .public) elapsed=\(Int(elapsed), privacy: .public)s flags=\(observation.flags, privacy: .public) keys=[\(observation.keysDescription, privacy: .public)] modifierIsDown=\(self.modifierIsDown, privacy: .public) \(external, privacy: .public)")
+    }
+
+    /// 固着シグネチャ（flags は down のまま、session/HID 両ストアの keyState は解放）が
+    /// 必要時間連続したら、通常の解放経路（`applyDownState(false)` → onStop）で復帰する。
+    ///
+    /// flagsState ベースの reconcile 判定はそのまま残し、これは**追加の**解放条件。
+    /// 発火時は根本原因の事後解析用に .warning で直近履歴つきスナップショットを残す
+    /// （誤発火だった場合もこのログで判別できる）。
+    private func recordStuckTick(_ observation: KeyStateObservation) {
+        let classMask = HotkeyModifier.combinedClassMask(modifiers)
+        let tick = ReleaseTick(
+            flagsDown: (observation.flags & classMask) == classMask,
+            sessionKeysDown: observation.perKey.allSatisfy(\.session),
+            hidKeysDown: observation.perKey.allSatisfy(\.hid)
+        )
+        guard stuckDetector.record(tick) else { return }
+        // 履歴は古い→新しい順。f=flags, s=session keyState, h=HID keyState（1=down）。
+        let history = stuckDetector.recentTicks
+            .map { "f\($0.flagsDown ? 1 : 0)s\($0.sessionKeysDown ? 1 : 0)h\($0.hidKeysDown ? 1 : 0)" }
+            .joined(separator: " ")
+        let external = stateSnapshotProvider?() ?? "-"
+        hkLog.warning("stuck release detected: flags=\(observation.flags, privacy: .public) keys=[\(observation.keysDescription, privacy: .public)] history=[\(history, privacy: .public)] \(external, privacy: .public) -> onStop")
+        applyDownState(false)
     }
 }
 
