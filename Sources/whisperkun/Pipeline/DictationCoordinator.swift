@@ -160,6 +160,11 @@ final class DictationCoordinator {
         }
     }
 
+    /// AI整形の待ち時間上限。オンデバイスモデルの応答が稀に返らなくても、
+    /// ここで打ち切って挿入フロー（`isFinishing` / HUD の後始末）を固着させない。
+    /// 超過時は整形前テキストで確定する（内容は欠けない）。
+    private static let aiFormatTimeout: Double = 10
+
     /// 確定テキストの後処理パイプライン: trim → 辞書置換 → AI整形。
     /// 辞書を AI より前に適用する（AI に正しい語を見せる）順序は `TranscriptPostProcessor` が固定する。
     private func process(_ text: String) async -> String {
@@ -168,7 +173,14 @@ final class DictationCoordinator {
         // AI整形（既定の軽整形）。整形中は HUD にスピナーを表示。
         if aiFormattingEnabled {
             hud.state.isFormatting = true
-            result = await ai.format(result)
+            // ai は @MainActor（暗黙 Sendable）なので @Sendable クロージャから呼べる。
+            let ai = self.ai
+            let input = result
+            if let formatted = await withTimeout(seconds: Self.aiFormatTimeout, operation: { await ai.format(input) }) {
+                result = formatted
+            } else {
+                coordLog.warning("ai.format timed out after \(Self.aiFormatTimeout, privacy: .public)s; using unformatted text")
+            }
             hud.state.isFormatting = false
         }
 
