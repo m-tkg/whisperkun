@@ -130,3 +130,5 @@
 
 /* HUD cancel */
 "録音を中止" = "Cancel recording";
+"診断ログを書き出す…" = "Export Diagnostic Log…";
+"診断ログを書き出せませんでした。" = "Could not export the diagnostic log.";
