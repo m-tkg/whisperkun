@@ -47,6 +47,21 @@ public enum HotkeyModifier: String, CaseIterable, Codable, Sendable {
         }
     }
 
+    /// `flagsChanged` イベントの仮想キーコード（`init?(keyCode:)` の逆引き）。
+    /// `CGEventSource.keyState` での物理キー状態の観測に使う。
+    public var keyCode: UInt16 {
+        switch self {
+        case .rightCommand: return 54
+        case .leftCommand: return 55
+        case .leftShift: return 56
+        case .leftOption: return 58
+        case .leftControl: return 59
+        case .rightShift: return 60
+        case .rightOption: return 61
+        case .rightControl: return 62
+        }
+    }
+
     /// 表示順（⌃⌥⇧⌘ の慣習順。同種は左→右）。
     public var sortOrder: Int {
         switch self {
