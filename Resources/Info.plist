@@ -29,6 +29,21 @@
 	<string>26.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<!-- subsystem は Support/Log.swift の Log.subsystem と一致させる（bundle ID ではない）。
+	     debug ログを常時 OSLog に永続化し、「認識中」固着などの稀な事象を事後採取できるようにする。 -->
+	<key>OSLogPreferences</key>
+	<dict>
+		<key>com.mtkg.whisperkun</key>
+		<dict>
+			<key>DEFAULT-OPTIONS</key>
+			<dict>
+				<key>Enable-Level</key>
+				<string>Debug</string>
+				<key>Persist-Level</key>
+				<string>Debug</string>
+			</dict>
+		</dict>
+	</dict>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 m-tkg. All rights reserved.</string>
 	<key>NSMicrophoneUsageDescription</key>

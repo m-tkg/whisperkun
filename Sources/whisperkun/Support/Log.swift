@@ -4,6 +4,8 @@ import OSLog
 ///
 /// subsystem は本番/ローカル検証ビルドで共通の固定値（`com.mtkg.whisperkun`）。
 /// Console.app で両ビルドのログを同じ絞り込みで追えるよう、bundle ID とは連動させない。
+/// `Resources/Info.plist` の `OSLogPreferences` はこの subsystem 名をキーに debug を
+/// 永続化している。変更する場合は両方を揃えること（採取手順は docs/diagnostics.md）。
 enum Log {
     static let subsystem = "com.mtkg.whisperkun"
 
