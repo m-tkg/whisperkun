@@ -28,6 +28,8 @@ struct RecordingHUDView: View {
                 Text(transcription.liveText.isEmpty ? "…" : transcription.liveText)
                     .font(.title3)
                     .lineLimit(3)
+                    // 3行を超えたら先頭側を省略し、いま喋っている最新部分を常に見せる。
+                    .truncationMode(.head)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }

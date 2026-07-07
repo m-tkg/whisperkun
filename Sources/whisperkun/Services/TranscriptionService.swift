@@ -82,10 +82,14 @@ final class TranscriptionService {
     /// （stop / 新しい beginSession が走ったら）中断し、`.listening` へは遷移しない。
     func runSession(generation gen: Int) async {
         do {
+            // .volatileResults 単独だと暫定結果が約12秒周期のバッチでしか届かず、
+            // 短い発話では停止まで liveText が空のまま（HUD が「…」固定）になる。
+            // .fastResults を足すと発話開始 約1秒から連続ストリームになりライブ表示が成立する。
+            // 速報ドラフトは後続の暫定/確定で置き換わるため、挿入テキストの品質には影響しない。
             let transcriber = SpeechTranscriber(
                 locale: locale,
                 transcriptionOptions: [],
-                reportingOptions: [.volatileResults],
+                reportingOptions: [.volatileResults, .fastResults],
                 attributeOptions: []
             )
             let analyzer = SpeechAnalyzer(modules: [transcriber])
