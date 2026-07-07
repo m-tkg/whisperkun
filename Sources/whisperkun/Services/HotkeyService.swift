@@ -44,6 +44,8 @@ final class HotkeyService {
     /// flagsState 幽霊 down 固着の検出器。独立2ストア（session/HID の keyState）が
     /// この時間だけ連続して解放を示したら解放とみなす。keyState の過渡的な false
     /// （[[listening-stuck-keystate-regression]]）で誤発火しないよう十分長くとる。
+    /// さらに、keyState が hold 中も一度も down を報告しないキーがあり（右 Shift keycode 60 で
+    /// 正常な長押しが誤って onStop された実機事例）、押下実績が無い間は検出器は発火しない。
     private static let stuckReleaseDuration: TimeInterval = 3.0
     private var stuckDetector = ReleaseStuckDetector(
         requiredDuration: HotkeyService.stuckReleaseDuration,
@@ -240,7 +242,16 @@ final class HotkeyService {
             sessionKeysDown: observation.perKey.allSatisfy(\.session),
             hidKeysDown: observation.perKey.allSatisfy(\.hid)
         )
-        guard stuckDetector.record(tick) else { return }
+        guard stuckDetector.record(tick) else {
+            // シグネチャは閾値まで連続したが押下実績が無く抑止した場合、事後解析用に
+            // 閾値到達の瞬間だけ記録する（カウントは伸び続けるので1セッション1回）。
+            if !stuckDetector.hasConfirmedKeysDown,
+               stuckDetector.consecutiveStuckTicks == stuckDetector.requiredConsecutiveTicks {
+                let external = stateSnapshotProvider?() ?? "-"
+                hkLog.info("stuck signature suppressed: keyState never confirmed press flags=\(observation.flags, privacy: .public) keys=[\(observation.keysDescription, privacy: .public)] \(external, privacy: .public)")
+            }
+            return
+        }
         // 履歴は古い→新しい順。f=flags, s=session keyState, h=HID keyState（1=down）。
         let history = stuckDetector.recentTicks
             .map { "f\($0.flagsDown ? 1 : 0)s\($0.sessionKeysDown ? 1 : 0)h\($0.hidKeysDown ? 1 : 0)" }
