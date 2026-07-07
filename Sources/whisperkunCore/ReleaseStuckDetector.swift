@@ -34,7 +34,9 @@ public struct ReleaseStuckDetector: Sendable {
     public static let historyLimit = 16
 
     /// 固着シグネチャが連続している回数。
-    private var consecutiveStuckTicks = 0
+    public private(set) var consecutiveStuckTicks = 0
+    /// この押下セッション中に、session/HID 両ストアが同 tick で押下を報告した実績があるか。
+    public private(set) var hasConfirmedKeysDown = false
     /// 直近の観測履歴（新しいものが末尾）。
     public private(set) var recentTicks: [ReleaseTick] = []
 
