@@ -1,8 +1,16 @@
-# CLAUDE.md
+# CLAUDE.md — whisperkun
 
-このリポジトリで作業する際のガイド。共通方針は上位の
-[CLAUDE_base.md](../CLAUDE_base.md)（メニューバー常駐アプリ共通ガイド）に従い、
-本ファイルには whisperkun 固有の事項を記す。
+このリポジトリで作業する際のガイド。
+
+**メニューバー常駐アプリ（kun シリーズ）共通の方針は上位ディレクトリの [`../CLAUDE_base.md`](../CLAUDE_base.md) を参照**
+（Swift Package 構成・アップデート・ログイン項目・kunkit 連携・リリース手順（`make release-tag`）・
+署名/公証・ブランチ運用・開発の進め方など）。共通方針を変えるときは `CLAUDE_base.md`
+（[kun-template](https://github.com/m-tkg/kun-template) が canonical）を編集する。
+本ファイルには whisperkun 固有の事項のみを記す。
+
+---
+
+# whisperkun 固有事項
 
 ## 概要
 
@@ -125,40 +133,14 @@ base は `Localization.swift` の `L.string`/`L.format` 方式だが、**whisper
 - **コールバック内で重い処理や同期 post をしない**。副作用は `DispatchQueue.main.async` で復帰後に逃がす。
 - **`tapDisabledByTimeout` / `tapDisabledByUserInput` では `tapEnable` で再有効化**し、取りこぼし後の固着を防ぐ。
 
-## リリース運用
+## リリース・開発の固有メモ
 
-- リリース用 Actions（`.github/workflows/release.yml`）は `v*` タグの push で発火する。
-  `Resources/Info.plist` の `CFBundleShortVersionString` を上げて `main` にマージした後、
-  `make release-tag` でタグを作成・push すると CI がビルド・署名・公証してリリースを自動作成する
-  （Secrets があれば Developer ID 署名＋公証、無ければ ad-hoc 署名・公証スキップにフォールバック）。
-  **`main` へのマージだけではリリースされない**。
-- リリースしたいときだけ Info.plist のバージョンを上げる。CI ランナーは macOS 26 専用 API（FoundationModels /
-  Speech）のため `runs-on: macos-26`。
-- `make release-tag` は main の最新かつクリーンな状態であることを確認してからタグを作成・push する
-  （main ブランチにいること／作業ツリーがクリーンであること／`origin/main` と一致していること／
-  タグがまだ存在しないことを確認し、満たさなければエラーで止まる）。
-- **配布署名/公証の Secrets（計6つ）** は上位の `setup-release-secrets.sh` で一括登録する:
-  ```sh
-  ~/git/github.com/m-tkg/setup-release-secrets.sh -r m-tkg/whisperkun
-  ```
-  署名は Developer ID Application（Team ID `G72M73C546`）。安定署名で TCC 権限がアップデート越しに保持される。
-  詳細は [docs/SIGNING.md](docs/SIGNING.md)。
-
-## 開発フロー
-
-- **`main` へ直接コミット/push しない**。変更は必ず PR 経由（`gh pr create`）。
-  リリース用 Actions は `v*` タグの push で発火するため、main への push（マージ）自体がリリースに
-  直結することはない。リリースするときは明示的に `make release-tag` を実行する。
-- 作業ブランチは**必ず最新の `main` から切る**:
-  `git fetch origin && git switch main && git pull --ff-only`（または `git fetch && git switch -c <branch> origin/main`）。
-- **PR 作成後に追加修正するときは、まず `gh pr view <番号> --json state,mergedAt` でマージ済みでないか確認する**。
-  マージ済みなら作業ブランチへ push しても main に反映されない（孤立する）ので、**最新 `main` から新ブランチを切り直して別 PR を出す**
-  （元コミットは `git cherry-pick <sha>` で移植できる）。
-- 純粋ロジック（`whisperkunCore`）はテストを書く（原則 TDD）。UI / AX / 録音まわりは実機での手動確認。
-  `.menu` 形式のメニューはネイティブ項目なので System Events での自動確認が可能。
-- 新機能の追加手順: ①判定ロジックを `whisperkunCore` に純粋実装＋テスト → ②設定が要るなら `Settings` に追加 →
-  ③設定 UI（タブ）を足す → ④GUI 文字列を ja/en 両方に対訳追加。
-- 一時ファイルは `.claude/tmp/` 以下に置く。
+共通のリリース手順・ブランチ運用・TDD 方針は `../CLAUDE_base.md` を参照。whisperkun 固有:
+- **CI ランナーは `runs-on: macos-26`**（FoundationModels / Speech の macOS 26 専用 API を使うため）。
+- 署名/公証の詳細は [docs/SIGNING.md](docs/SIGNING.md)。Secrets 登録は
+  `~/git/github.com/m-tkg/setup-release-secrets.sh -r m-tkg/whisperkun`。
+- テスト: 純粋ロジック（`whisperkunCore`）は TDD。UI / AX / 録音まわりは実機で手動確認。
+  `.menu` 形式のメニューはネイティブ項目なので System Events で自動確認できる。
 
 ## Kuntraykun 連携（実装済み・kunkit 利用）
 
