@@ -1,4 +1,5 @@
 import AppKit
+import KunIntegrationBridge
 import SwiftUI
 import whisperkunCore
 
@@ -16,10 +17,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItemController: StatusItemController!
     private let menu = NSMenu()
     private var kuntraykunBridge: KuntraykunBridge?
-    /// メニューが画面に表示（トラッキング）中か。表示中のスナップショット書き出しを保留するために使う。
-    private var isMenuOpen = false
-    /// メニュー表示中に保留したスナップショット書き出しがあるか（閉じたときにまとめて書き出す）。
-    private var menuExportPending = false
     /// 設定ウィンドウ（SwiftUI の SettingsView を自前 NSWindow にホスト）。
     private let settingsWindowController = SettingsWindowController()
 
@@ -39,26 +36,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.statusItemController.setBadgeVisible(available)
             // kuntraykun にもアップデート有無を伝える（集約バッジ/赤丸用）。
             self?.kuntraykunBridge?.reportUpdate(available)
-            // アップデート項目の文言が変わるので、kuntraykun 用スナップショットも書き出し直す（連携 v4）。
-            self?.exportMenuSnapshot()
+            // アップデート項目の文言が変わるので、kuntraykun 用スナップショットも書き出し直す
+            // （連携 v4。表示中なら kunkit 側が保留し、閉じたあとに書き出す）。
+            self?.kuntraykunBridge?.exportMenuSnapshot()
         }
         // 起動時チェックが既に完了している場合に取りこぼさないよう初期同期する。
         appState.updates.onUpdateAvailabilityChanged?(appState.updates.availableRelease != nil)
 
-        // kuntraykun 連携: 管理対象なら自分のアイコンを隠し、showMenu でメニューを出す。
-        // v4: メニュー構造を共有してサブメニュー表示・項目実行にも応じる。
-        let bridge = KuntraykunBridge(
-            setHidden: { [weak self] hidden in self?.statusItemController.setHidden(hidden) },
-            popUpMenu: { [weak self] point in self?.statusItemController.popUpMenu(at: point) },
-            exportMenu: { [weak self] in self?.exportMenuSnapshot() },
-            performMenuItem: { [weak self] id in self?.performMenuItem(id: id) ?? false }
-        )
+        // kuntraykun 連携（kunkit）: 管理対象なら自分のアイコンを隠し、showMenu でメニューを出す。
+        // v4: メニュー構造を共有してサブメニュー表示・項目実行にも応じる（初回書き出しは start() 内）。
+        let bridge = statusItemController.makeKuntraykunBridge(menu: menu)
         bridge.start()
         kuntraykunBridge = bridge
         // bridge 生成前に確定していた更新状態を改めて報告する。
         bridge.reportUpdate(appState.updates.availableRelease != nil)
-        // 起動時に現在のメニュー構造を書き出しておく（kuntraykun 起動済みでもすぐサブメニューが出せる）。
-        exportMenuSnapshot()
     }
 
     /// 再アクティブ化時にアイコンを貼り直す。万一フォールバック（mic.fill）になっていても、
@@ -96,42 +87,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let quitItem = NSMenuItem(title: String(localized: "whisperkun を終了"), action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
-    }
-
-    /// メニューの表示中フラグを管理する（スナップショット書き出しの保留用）。
-    func menuWillOpen(_ menu: NSMenu) {
-        isMenuOpen = true
-    }
-
-    func menuDidClose(_ menu: NSMenu) {
-        isMenuOpen = false
-        guard menuExportPending else { return }
-        menuExportPending = false
-        // 閉じた直後は AppKit がまだトラッキングの後処理中の場合があるため、1ループ逃がしてから書き出す。
-        DispatchQueue.main.async { [weak self] in self?.exportMenuSnapshot() }
-    }
-
-    // MARK: - kuntraykun 連携 v4（メニュースナップショット）
-
-    /// メニュー構造を kuntraykun 用の共有場所へ書き出す（連携 v4）。
-    /// `export(_:)` が `menu.update()` → `menuNeedsUpdate` を同期的に呼ぶため、
-    /// 開くたびに再構築するこのメニューでも呼んだ時点の最新内容が書き出される。
-    /// 起動時・requestMenu 受信時・メニュー文言が変わる箇所（アップデート有無の変化）から呼ぶ。
-    /// ただし表示（トラッキング）中は `menu.update()` → removeAllItems の再構築が
-    /// 開いているメニューを壊すため書き出しを保留し、閉じたときに行う（`menuDidClose`）。
-    private func exportMenuSnapshot() {
-        guard !isMenuOpen else {
-            menuExportPending = true
-            return
-        }
-        KuntraykunMenuExport.export(menu)
-    }
-
-    /// kuntraykun のサブメニューでクリックされた項目（インデックスパス ID）を実行する（連携 v4）。
-    /// 各項目の target は self なのでレスポンダチェーンに依存せず実行できる。
-    /// ウィンドウを開く項目（設定… / 診断ログ…）は各アクション側が前面化（activate）を行う。
-    private func performMenuItem(id: String) -> Bool {
-        KuntraykunMenuExport.performItem(id: id, in: menu)
     }
 
     /// 新バージョンがあればインストール、なければ確認のラベル。

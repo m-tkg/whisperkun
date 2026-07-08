@@ -144,32 +144,26 @@ base は `Localization.swift` の `L.string`/`L.format` 方式だが、**whisper
   ③設定 UI（タブ）を足す → ④GUI 文字列を ja/en 両方に対訳追加。
 - 一時ファイルは `.claude/tmp/` 以下に置く。
 
-## Kuntraykun 連携（実装済み）
+## Kuntraykun 連携（実装済み・kunkit 利用）
 
-本アプリは kuntraykun（`com.mtkg.kuntraykun`）にメニューバーアイコンを集約させる連携に対応している。
+本アプリは kuntraykun（`com.mtkg.kuntraykun`）にメニューバーアイコンを集約させる連携（v1〜v4:
+アイコン集約・実アイコン書き出し・アップデート集約・サブメニュー表示）に対応している。
+- **実装は共有ライブラリ [kunkit](https://github.com/m-tkg/kunkit)**（SPM 依存、`KunIntegrationBridge` プロダクト）。
+  `KuntraykunBridge` / `KuntraykunIconExport` / `KuntraykunMenuExport` を提供し、アプリ側に連携ロジックの複製は持たない。
 - **MenuBarExtra からの作り替え**: `MenuBarExtra` はメニューを座標指定で `popUp` する公開 API が無く、
   kuntraykun の `showMenu`（指定座標にメニューを出す）に応えられない。そのため、メニューバーを
   AppKit の `NSStatusItem` + `NSMenu` に作り替えた（`Sources/whisperkun/App/AppDelegate.swift`、
-  `@NSApplicationDelegateAdaptor` で接続）。設定画面は SwiftUI の `Settings` シーンのまま
-  （メニューの「設定…」は `showSettingsWindow:` で開く）。`AppState` は `AppDelegate` が保持して SwiftUI に渡す。
-- **連携本体**: `Sources/whisperkun/App/KuntraykunBridge.swift`。分散通知 `sync`/`showMenu` を観測し、
-  起動時に `appLaunched` を送信。管理対象 かつ kuntraykun 起動中なら自分のアイコンを隠し、`showMenu` で
-  自分のメニューを指定座標に `popUp` する（未起動ならフォールバック表示）。
+  `@NSApplicationDelegateAdaptor` で接続）。`AppState` は `AppDelegate` が保持して SwiftUI に渡す。
+- 配線: `StatusItemController.makeKuntraykunBridge(menu:)`（`KuntraykunBridge(statusItem:menu:)` の標準配線。
+  メニューは `AppDelegate` が所有するため引数で渡す）を `AppDelegate` が `bridge.start()` する。
+  start() が観測開始・`appLaunched` 送信・初回メニュー書き出しまで行う。
+  アイコン書き出し（v2）は `StatusItemController.applyIcon()` の `KuntraykunIconExport.export(_:)`、
+  アップデート報告（v3）は `kuntraykunBridge?.reportUpdate(_:)`、
+  メニュー文言の変化（v4、`onUpdateAvailabilityChanged`）は `bridge.exportMenuSnapshot()`。
+- 本アプリのメニューは開くたびに `menuNeedsUpdate` で同期再構築するため「表示（トラッキング）中の
+  スナップショット書き出しは開いているメニューを壊す」点に注意が要るが、kunkit の Bridge が
+  トラッキング通知の観測で自動的に保留し、閉じたあとに書き出す（アプリ側の保留処理は不要）。
+- kuntraykun のサブメニューから実行される項目のうちウィンドウを開くものは、各アクション側が
+  前面化（`NSApp.activate`）を行う（`HostedWindowController` / `DiagnosticsExporter`）。
 - 仕様: kuntraykun リポジトリ `docs/kun-integration-protocol.md`、共通方針は `../CLAUDE_base.md`「Kuntraykun 連携」。
-- 管理対象フラグは `UserDefaults`（キー `KuntraykunManaged`）に永続化する。
-- **実アイコンのライブ書き出し（v2）**: `KuntraykunIconExport.export(_:)`（`Sources/whisperkun/App/KuntraykunIconExport.swift`）で、
-  `StatusItemController` がメニューバーアイコンを設定する箇所で現在アイコンを
-  `~/Library/Application Support/Kuntraykun/MenuBarIcons/<基底ID>.png` に書き出す（テンプレートは `.template` マーカー併記）。
-  kuntraykun はこれを優先して一覧に表示する。赤バッジは別 view なので書き出し対象外。
-- **メニュースナップショットの共有（v4）**: `KuntraykunMenuExport.swift`（`Sources/whisperkun/App/`）で、
-  自分のメニュー構造を JSON で `~/Library/Application Support/Kuntraykun/Menus/<基底ID>.json` に原子的に
-  書き出して `menuSnapshot` 通知で知らせる。kuntraykun はこれをプルダウンの「アプリ名のサブメニュー」として
-  再構築し、項目クリックを `invokeMenuItem` で依頼してくる（世代トークンで stale な依頼を弾く）。
-  `KuntraykunBridge` が `requestMenu` / `invokeMenuItem` を観測し、書き出し・項目実行は `AppDelegate` に委譲する。
-  - 本アプリのメニューは開くたびに `menuNeedsUpdate` で同期再構築するが、`export(_:)` 冒頭の
-    `menu.update()` が `menuNeedsUpdate` を同期的に呼ぶため、書き出しは常に最新内容になる。
-  - 再書き出しのタイミング: 起動時 / `requestMenu` 受信時 / アップデート有無の変化
-    （`onUpdateAvailabilityChanged`、メニュー文言が変わる）/ `invokeMenuItem` 実行後（次のランループ）。
-  - 項目実行はインデックスパス ID → `NSMenu.performActionForItem(at:)`。各項目の target は
-    `AppDelegate` なのでレスポンダチェーンに依存しない。ウィンドウを開く項目は各アクション側が
-    前面化（`NSApp.activate`）を行う（`HostedWindowController` / `DiagnosticsExporter`）。
+- 管理対象フラグは kunkit が `UserDefaults`（キー `KuntraykunManaged`）に永続化する。

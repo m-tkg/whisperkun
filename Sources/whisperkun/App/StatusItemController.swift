@@ -1,4 +1,5 @@
 import AppKit
+import KunIntegrationBridge
 import whisperkunCore
 
 private let logger = Log.logger(category: "StatusItem")
@@ -55,14 +56,11 @@ final class StatusItemController {
         updateBadgeView?.isHidden = !visible
     }
 
-    /// アイコンの表示/非表示（kuntraykun への集約時に隠す）。
-    func setHidden(_ hidden: Bool) {
-        statusItem.isVisible = !hidden
-    }
-
-    /// メニューを指定スクリーン座標に出す（kuntraykun の showMenu 用）。
-    func popUpMenu(at point: NSPoint) {
-        statusItem.menu?.popUp(positioning: nil, at: point, in: nil)
+    /// kuntraykun 連携ブリッジを標準配線で生成する（アイコンの隠し/popUp/メニュー書き出し/項目実行/
+    /// 表示中の書き出し保留は kunkit 側の既定実装。`NSStatusItem` は破棄せず保持し isVisible で隠す）。
+    /// メニューの構築・アクションは `AppDelegate` が担うため、メニューは引数で受け取る。
+    func makeKuntraykunBridge(menu: NSMenu) -> KuntraykunBridge {
+        KuntraykunBridge(statusItem: statusItem, menu: menu)
     }
 
     /// 赤バッジ view をボタンに重ね、アイコン幅基準で右下に Auto Layout 固定する。
