@@ -4,6 +4,14 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>ja</string>
+	<key>CFBundleDisplayName</key>
+	<string>Whisperkun</string>
+	<key>CFBundleExecutable</key>
+	<string>Whisperkun</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.mtkg.whisperkun</string>
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>en</string>
@@ -11,26 +19,22 @@
 	</array>
 	<key>CFBundleName</key>
 	<string>Whisperkun</string>
-	<key>CFBundleDisplayName</key>
-	<string>Whisperkun</string>
-	<key>CFBundleIdentifier</key>
-	<string>com.mtkg.whisperkun</string>
-	<key>CFBundleExecutable</key>
-	<string>Whisperkun</string>
-	<key>CFBundleIconFile</key>
-	<string>AppIcon</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.29</string>
+	<string>1.1.0</string>
 	<key>CFBundleVersion</key>
 	<string>35</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>26.0</string>
 	<key>LSUIElement</key>
 	<true/>
-	<!-- subsystem は Support/Log.swift の Log.subsystem と一致させる（bundle ID ではない）。
-	     debug ログを常時 OSLog に永続化し、「認識中」固着などの稀な事象を事後採取できるようにする。 -->
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 m-tkg. All rights reserved.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>音声を文字起こしするためにマイクを使用します。</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>発話内容をオンデバイスで文字起こしするために音声認識を使用します。</string>
 	<key>OSLogPreferences</key>
 	<dict>
 		<key>com.mtkg.whisperkun</key>
@@ -44,11 +48,5 @@
 			</dict>
 		</dict>
 	</dict>
-	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © 2026 m-tkg. All rights reserved.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>音声を文字起こしするためにマイクを使用します。</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>発話内容をオンデバイスで文字起こしするために音声認識を使用します。</string>
 </dict>
 </plist>
