@@ -1,5 +1,6 @@
 import AppKit
 import KunIntegrationBridge
+import KunSupport
 import SwiftUI
 import whisperkunCore
 

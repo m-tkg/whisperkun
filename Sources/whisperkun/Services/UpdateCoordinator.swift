@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import KunAppKit
 import KunUpdateKit
 import whisperkunCore
 
@@ -9,7 +10,8 @@ import whisperkunCore
 @Observable
 final class UpdateCoordinator {
     @ObservationIgnored private let updateService = UpdateService()
-    @ObservationIgnored private lazy var selfUpdater = SelfUpdater(service: updateService)
+    // 自己更新は kunkit 共通実装（zip DL は KunUpdateKit の ReleaseDownloader / URLSession）。
+    @ObservationIgnored private lazy var selfUpdater = SelfUpdater(appName: "whisperkun")
     /// 利用可能な新バージョン（無ければ nil）。メニュー表示に使う。
     private(set) var availableRelease: ReleaseInfo?
     /// アップデート確認/インストールが進行中か。
