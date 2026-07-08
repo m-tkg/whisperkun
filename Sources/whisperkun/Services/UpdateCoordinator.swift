@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import KunUpdateKit
 import whisperkunCore
 
 /// アップデートの統括: 起動時/定期/スリープ復帰のサイレントチェック、手動チェック、
@@ -19,9 +20,6 @@ final class UpdateCoordinator {
     @ObservationIgnored private var updateCheckTimer: Timer?
     /// スリープ復帰通知の購読トークン。
     @ObservationIgnored private var wakeObserver: NSObjectProtocol?
-
-    /// 定期チェック間隔（秒）。未認証 GitHub API のレート制限 60回/時に十分収まる 1 時間。
-    private static let updateCheckInterval: TimeInterval = 60 * 60
 
     /// 起動時のサイレントチェックと、定期＋スリープ復帰チェックの配線を開始する。
     func start() {
@@ -47,14 +45,16 @@ final class UpdateCoordinator {
     /// Timer はスリープ中に発火しないため、`didWakeNotification` で復帰時にも即チェックする
     /// （ノート PC で「閉じている間に新版」に対応）。
     private func scheduleUpdateChecks() {
-        let timer = Timer.scheduledTimer(withTimeInterval: Self.updateCheckInterval, repeats: true) { [weak self] _ in
+        // チェック間隔は kun シリーズ共通定数（6時間）。未認証 GitHub API のレート制限（60回/時）に
+        // 十分収まり、ETag 条件付き取得（304 は消費しない）と併せて枯渇を避ける。
+        let timer = Timer.scheduledTimer(withTimeInterval: KunUpdateSchedule.checkInterval, repeats: true) { [weak self] _ in
             // Timer のブロックはメインスレッドで呼ばれるが非隔離なので assumeIsolated で @MainActor 文脈に乗せる。
             MainActor.assumeIsolated {
                 self?.startUpdateCheck(interactive: false)
             }
         }
         // 省電力のためコアレッシングを許可（間隔の 10%）。
-        timer.tolerance = Self.updateCheckInterval * 0.1
+        timer.tolerance = KunUpdateSchedule.checkIntervalTolerance
         updateCheckTimer = timer
 
         wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(

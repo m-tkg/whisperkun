@@ -1,5 +1,6 @@
 import AppKit
 import OSLog
+import KunUpdateKit
 import whisperkunCore
 
 private let logger = Log.logger(category: "SelfUpdater")

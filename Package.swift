@@ -8,10 +8,10 @@ let package = Package(
     ],
     dependencies: [
         // kuntraykun 連携（プロトコル定数・Bridge・アイコン/メニュー書き出し）と
-        // 更新チェック（ETag 条件付き取得）の共有ライブラリ。
-        // 1.1.0: 世代ハッシュ修正（サブメニュー項目クリックが常に拒否される不具合）と KunUpdateKit の追加。
+        // 更新チェック（ETag 条件付き取得・ReleaseInfo/VersionComparator・チェック間隔）の共有ライブラリ。
+        // 1.2.0: ReleaseInfo/VersionComparator と KunUpdateSchedule（チェック間隔6時間）の追加。
         // Package.resolved を追跡していないため、必要な最低バージョンをここで保証する。
-        .package(url: "https://github.com/m-tkg/kunkit.git", from: "1.1.0")
+        .package(url: "https://github.com/m-tkg/kunkit.git", from: "1.2.0")
     ],
     targets: [
         // 純粋ロジック（テスト対象）: AppKit/AVFoundation/Speech/SwiftData に依存しない計算・モデル
