@@ -1,4 +1,5 @@
 import AppKit
+import KunAppKit
 import Observation
 import SwiftData
 import whisperkunCore
@@ -19,8 +20,8 @@ final class AppState {
     var transcription: TranscriptionService { dictation.transcription }
 
     init() {
-        // 多重起動防止: 同一バンドルIDの既存インスタンスがあれば前面化して自分は終了する。
-        AppLaunchGuard.terminateIfAlreadyRunning()
+        // 多重起動防止: 同一バンドルIDの既存インスタンスがあれば前面化して自分は終了する（kunkit 共通実装）。
+        KunAppLaunch.terminateIfAlreadyRunning()
 
         do {
             modelContainer = try ModelContainer(

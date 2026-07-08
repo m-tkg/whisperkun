@@ -7,11 +7,14 @@ let package = Package(
         .macOS("26.0")
     ],
     dependencies: [
-        // kuntraykun 連携（プロトコル定数・Bridge・アイコン/メニュー書き出し）と
-        // 更新チェック（ETag 条件付き取得・ReleaseInfo/VersionComparator・チェック間隔）の共有ライブラリ。
-        // 1.2.0: ReleaseInfo/VersionComparator と KunUpdateSchedule（チェック間隔6時間）の追加。
+        // kun シリーズ共通の共有ライブラリ。
+        // - KunIntegrationBridge: kuntraykun 連携（プロトコル定数・Bridge・アイコン/メニュー書き出し）
+        // - KunUpdateKit: 更新チェック（ETag 条件付き取得・ReleaseInfo/VersionComparator・チェック間隔・zip DL）
+        // - KunSupport: 共通ユーティリティ（BundleIdentity ほか）
+        // - KunAppKit: メニューバー常駐アプリ共通（SelfUpdater・多重起動ガード ほか）
+        // 1.3.0: KunSupport / KunAppKit と ReleaseDownloader の追加。
         // Package.resolved を追跡していないため、必要な最低バージョンをここで保証する。
-        .package(url: "https://github.com/m-tkg/kunkit.git", from: "1.2.0")
+        .package(url: "https://github.com/m-tkg/kunkit.git", from: "1.3.0")
     ],
     targets: [
         // 純粋ロジック（テスト対象）: AppKit/AVFoundation/Speech/SwiftData に依存しない計算・モデル
@@ -25,6 +28,8 @@ let package = Package(
                 "whisperkunCore",
                 .product(name: "KunIntegrationBridge", package: "kunkit"),
                 .product(name: "KunUpdateKit", package: "kunkit"),
+                .product(name: "KunSupport", package: "kunkit"),
+                .product(name: "KunAppKit", package: "kunkit"),
             ]
         ),
         .testTarget(

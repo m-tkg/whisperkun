@@ -1,5 +1,6 @@
 import AppKit
 import KunIntegrationBridge
+import KunSupport
 import whisperkunCore
 
 private let logger = Log.logger(category: "StatusItem")
