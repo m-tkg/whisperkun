@@ -35,19 +35,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.statusItemController.setBadgeVisible(available)
             // kuntraykun にもアップデート有無を伝える（集約バッジ/赤丸用）。
             self?.kuntraykunBridge?.reportUpdate(available)
+            // アップデート項目の文言が変わるので、kuntraykun 用スナップショットも書き出し直す（連携 v4）。
+            self?.exportMenuSnapshot()
         }
         // 起動時チェックが既に完了している場合に取りこぼさないよう初期同期する。
         appState.updates.onUpdateAvailabilityChanged?(appState.updates.availableRelease != nil)
 
         // kuntraykun 連携: 管理対象なら自分のアイコンを隠し、showMenu でメニューを出す。
+        // v4: メニュー構造を共有してサブメニュー表示・項目実行にも応じる。
         let bridge = KuntraykunBridge(
             setHidden: { [weak self] hidden in self?.statusItemController.setHidden(hidden) },
-            popUpMenu: { [weak self] point in self?.statusItemController.popUpMenu(at: point) }
+            popUpMenu: { [weak self] point in self?.statusItemController.popUpMenu(at: point) },
+            exportMenu: { [weak self] in self?.exportMenuSnapshot() },
+            performMenuItem: { [weak self] id in self?.performMenuItem(id: id) ?? false }
         )
         bridge.start()
         kuntraykunBridge = bridge
         // bridge 生成前に確定していた更新状態を改めて報告する。
         bridge.reportUpdate(appState.updates.availableRelease != nil)
+        // 起動時に現在のメニュー構造を書き出しておく（kuntraykun 起動済みでもすぐサブメニューが出せる）。
+        exportMenuSnapshot()
     }
 
     /// 再アクティブ化時にアイコンを貼り直す。万一フォールバック（mic.fill）になっていても、
@@ -85,6 +92,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let quitItem = NSMenuItem(title: String(localized: "whisperkun を終了"), action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
+    }
+
+    // MARK: - kuntraykun 連携 v4（メニュースナップショット）
+
+    /// メニュー構造を kuntraykun 用の共有場所へ書き出す（連携 v4）。
+    /// `export(_:)` が `menu.update()` → `menuNeedsUpdate` を同期的に呼ぶため、
+    /// 開くたびに再構築するこのメニューでも呼んだ時点の最新内容が書き出される。
+    /// 起動時・requestMenu 受信時・メニュー文言が変わる箇所（アップデート有無の変化）から呼ぶ。
+    private func exportMenuSnapshot() {
+        KuntraykunMenuExport.export(menu)
+    }
+
+    /// kuntraykun のサブメニューでクリックされた項目（インデックスパス ID）を実行する（連携 v4）。
+    /// 各項目の target は self なのでレスポンダチェーンに依存せず実行できる。
+    /// ウィンドウを開く項目（設定… / 診断ログ…）は各アクション側が前面化（activate）を行う。
+    private func performMenuItem(id: String) -> Bool {
+        KuntraykunMenuExport.performItem(id: id, in: menu)
     }
 
     /// 新バージョンがあればインストール、なければ確認のラベル。

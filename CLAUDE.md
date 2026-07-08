@@ -161,3 +161,15 @@ base は `Localization.swift` の `L.string`/`L.format` 方式だが、**whisper
   `StatusItemController` がメニューバーアイコンを設定する箇所で現在アイコンを
   `~/Library/Application Support/Kuntraykun/MenuBarIcons/<基底ID>.png` に書き出す（テンプレートは `.template` マーカー併記）。
   kuntraykun はこれを優先して一覧に表示する。赤バッジは別 view なので書き出し対象外。
+- **メニュースナップショットの共有（v4）**: `KuntraykunMenuExport.swift`（`Sources/whisperkun/App/`）で、
+  自分のメニュー構造を JSON で `~/Library/Application Support/Kuntraykun/Menus/<基底ID>.json` に原子的に
+  書き出して `menuSnapshot` 通知で知らせる。kuntraykun はこれをプルダウンの「アプリ名のサブメニュー」として
+  再構築し、項目クリックを `invokeMenuItem` で依頼してくる（世代トークンで stale な依頼を弾く）。
+  `KuntraykunBridge` が `requestMenu` / `invokeMenuItem` を観測し、書き出し・項目実行は `AppDelegate` に委譲する。
+  - 本アプリのメニューは開くたびに `menuNeedsUpdate` で同期再構築するが、`export(_:)` 冒頭の
+    `menu.update()` が `menuNeedsUpdate` を同期的に呼ぶため、書き出しは常に最新内容になる。
+  - 再書き出しのタイミング: 起動時 / `requestMenu` 受信時 / アップデート有無の変化
+    （`onUpdateAvailabilityChanged`、メニュー文言が変わる）/ `invokeMenuItem` 実行後（次のランループ）。
+  - 項目実行はインデックスパス ID → `NSMenu.performActionForItem(at:)`。各項目の target は
+    `AppDelegate` なのでレスポンダチェーンに依存しない。ウィンドウを開く項目は各アクション側が
+    前面化（`NSApp.activate`）を行う（`HostedWindowController` / `DiagnosticsExporter`）。
