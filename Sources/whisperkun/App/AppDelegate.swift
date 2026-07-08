@@ -16,6 +16,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItemController: StatusItemController!
     private let menu = NSMenu()
     private var kuntraykunBridge: KuntraykunBridge?
+    /// メニューが画面に表示（トラッキング）中か。表示中のスナップショット書き出しを保留するために使う。
+    private var isMenuOpen = false
+    /// メニュー表示中に保留したスナップショット書き出しがあるか（閉じたときにまとめて書き出す）。
+    private var menuExportPending = false
     /// 設定ウィンドウ（SwiftUI の SettingsView を自前 NSWindow にホスト）。
     private let settingsWindowController = SettingsWindowController()
 
@@ -94,13 +98,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(quitItem)
     }
 
+    /// メニューの表示中フラグを管理する（スナップショット書き出しの保留用）。
+    func menuWillOpen(_ menu: NSMenu) {
+        isMenuOpen = true
+    }
+
+    func menuDidClose(_ menu: NSMenu) {
+        isMenuOpen = false
+        guard menuExportPending else { return }
+        menuExportPending = false
+        // 閉じた直後は AppKit がまだトラッキングの後処理中の場合があるため、1ループ逃がしてから書き出す。
+        DispatchQueue.main.async { [weak self] in self?.exportMenuSnapshot() }
+    }
+
     // MARK: - kuntraykun 連携 v4（メニュースナップショット）
 
     /// メニュー構造を kuntraykun 用の共有場所へ書き出す（連携 v4）。
     /// `export(_:)` が `menu.update()` → `menuNeedsUpdate` を同期的に呼ぶため、
     /// 開くたびに再構築するこのメニューでも呼んだ時点の最新内容が書き出される。
     /// 起動時・requestMenu 受信時・メニュー文言が変わる箇所（アップデート有無の変化）から呼ぶ。
+    /// ただし表示（トラッキング）中は `menu.update()` → removeAllItems の再構築が
+    /// 開いているメニューを壊すため書き出しを保留し、閉じたときに行う（`menuDidClose`）。
     private func exportMenuSnapshot() {
+        guard !isMenuOpen else {
+            menuExportPending = true
+            return
+        }
         KuntraykunMenuExport.export(menu)
     }
 
