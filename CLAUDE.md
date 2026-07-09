@@ -2,7 +2,7 @@
 
 このリポジトリで作業する際のガイド。
 
-**メニューバー常駐アプリ（kun シリーズ）共通の方針は上位ディレクトリの [`../CLAUDE_base.md`](../CLAUDE_base.md) を参照**
+**メニューバー常駐アプリ（kun シリーズ）共通の方針は上位ディレクトリの [`../kun-template/CLAUDE_base.md`](../kun-template/CLAUDE_base.md) を参照**
 （Swift Package 構成・アップデート・ログイン項目・kunkit 連携・リリース手順（`make release-tag`）・
 署名/公証・ブランチ運用・開発の進め方など）。共通方針を変えるときは `CLAUDE_base.md`
 （[kun-template](https://github.com/m-tkg/kun-template) が canonical）を編集する。
@@ -135,7 +135,7 @@ base は `Localization.swift` の `L.string`/`L.format` 方式だが、**whisper
 
 ## リリース・開発の固有メモ
 
-共通のリリース手順・ブランチ運用・TDD 方針は `../CLAUDE_base.md` を参照。whisperkun 固有:
+共通のリリース手順・ブランチ運用・TDD 方針は `../kun-template/CLAUDE_base.md` を参照。whisperkun 固有:
 - **CI ランナーは `runs-on: macos-26`**（FoundationModels / Speech の macOS 26 専用 API を使うため）。
 - 署名/公証の詳細は [docs/SIGNING.md](docs/SIGNING.md)。Secrets 登録は
   `~/git/github.com/m-tkg/setup-release-secrets.sh -r m-tkg/whisperkun`。
@@ -163,5 +163,5 @@ base は `Localization.swift` の `L.string`/`L.format` 方式だが、**whisper
   トラッキング通知の観測で自動的に保留し、閉じたあとに書き出す（アプリ側の保留処理は不要）。
 - kuntraykun のサブメニューから実行される項目のうちウィンドウを開くものは、各アクション側が
   前面化（`NSApp.activate`）を行う（`HostedWindowController` / `DiagnosticsExporter`）。
-- 仕様: kuntraykun リポジトリ `docs/kun-integration-protocol.md`、共通方針は `../CLAUDE_base.md`「Kuntraykun 連携」。
+- 仕様: kuntraykun リポジトリ `docs/kun-integration-protocol.md`、共通方針は `../kun-template/CLAUDE_base.md`「Kuntraykun 連携」。
 - 管理対象フラグは kunkit が `UserDefaults`（キー `KuntraykunManaged`）に永続化する。
