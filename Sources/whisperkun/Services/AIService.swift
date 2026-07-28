@@ -1,5 +1,8 @@
 import FoundationModels
 import Foundation
+import whisperkunCore
+
+private let aiLog = Log.logger(category: "ai")
 
 /// Foundation Models（オンデバイスLLM）による文字起こしテキストの整形を担う。
 ///
@@ -23,6 +26,10 @@ final class AIService {
        英語化すると不自然な語・日本語として定着した語・綴りが曖昧な語はカタカナのまま残す。
 
     絶対に守る禁止事項:
+    - 英語に置き換えてよいのは、入力でカタカナ表記されている語だけ。漢字やひらがなで
+      書かれた語は、対応する英単語があっても絶対に英語にしない
+      （例: 時間→time、苦戦→struggle、確認→check はすべて禁止。そのまま残す）。
+    - 単語単位であっても、カタカナ語以外の翻訳・言い換えはすべて禁止。
     - 入力の言語を変えない。日本語の入力は日本語のまま出力する。文や文章全体を英語などへ
       翻訳してはいけない。カタカナが多い文でも、英語にするのは個々の単語だけで、
       周囲の日本語（助詞・活用・語尾）はそのまま残す。
@@ -37,6 +44,8 @@ final class AIService {
     出力「今日のcommitをreviewしてほしい」
     入力「これは変えないようにしてほしい」
     出力「これは変えないようにしてほしい」
+    入力「結構時間がかかってるけど、何に苦戦してる？」
+    出力「結構時間がかかってるけど、何に苦戦してる？」
 
     整形した本文だけを出力してください。
     """
@@ -89,7 +98,8 @@ final class AIService {
         // 入力を「整形対象データ」として枠付けし、質問形でも回答されないようにする。
         let prompt = """
         次のテキストを整形してください。整形は「フィラー除去」と「カタカナ語の英語化」だけに限り、
-        入力と同じ言語のまま、語順・語尾・言い回しは一切変えません。質問・依頼の形でも回答せず、
+        入力と同じ言語のまま、語順・語尾・言い回しは一切変えません。英語化するのはカタカナ表記の
+        語だけで、漢字・ひらがなの語はそのまま残します。質問・依頼の形でも回答せず、
         整形結果の本文だけを返します。
         テキスト:
         \(trimmed)
@@ -98,7 +108,15 @@ final class AIService {
         do {
             let response = try await session.respond(to: prompt)
             let formatted = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
-            return formatted.isEmpty ? text : formatted
+            guard !formatted.isEmpty else { return text }
+            // 許可操作（フィラー除去・カタカナ英語化）で説明できない変換（漢字語の英語化など）を
+            // 決定的に検出し、違反時は整形前テキストで確定する。
+            let verdict = AIFormatValidator.validate(original: trimmed, formatted: formatted)
+            guard verdict == .valid else {
+                aiLog.warning("整形結果を破棄（\(String(describing: verdict), privacy: .public)）。整形前テキストで確定")
+                return text
+            }
+            return formatted
         } catch {
             // 生成失敗時は生テキストで挿入を続行する。
             return text
