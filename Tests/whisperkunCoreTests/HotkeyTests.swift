@@ -1,3 +1,4 @@
+import CoreGraphics
 import Testing
 @testable import whisperkunCore
 
@@ -67,12 +68,115 @@ import Testing
         #expect(HotkeyModifier.combinedMask(Set(HotkeyModifier.allCases)) == 0x0000_207F)
     }
 
+    // classMask は CGEventFlags の写し（Core は CoreGraphics 非依存のため数値リテラル）。
+    // 写し間違いを SDK 値との突き合わせで検出する。
+    @Test func classMaskはCGEventFlagsのクラスマスクと一致する() {
+        #expect(HotkeyModifier.leftControl.classMask == CGEventFlags.maskControl.rawValue)
+        #expect(HotkeyModifier.rightControl.classMask == CGEventFlags.maskControl.rawValue)
+        #expect(HotkeyModifier.leftShift.classMask == CGEventFlags.maskShift.rawValue)
+        #expect(HotkeyModifier.rightShift.classMask == CGEventFlags.maskShift.rawValue)
+        #expect(HotkeyModifier.leftOption.classMask == CGEventFlags.maskAlternate.rawValue)
+        #expect(HotkeyModifier.rightOption.classMask == CGEventFlags.maskAlternate.rawValue)
+        #expect(HotkeyModifier.leftCommand.classMask == CGEventFlags.maskCommand.rawValue)
+        #expect(HotkeyModifier.rightCommand.classMask == CGEventFlags.maskCommand.rawValue)
+    }
+
+    @Test func classDeviceMaskは同クラス左右のdeviceMaskの論理和になる() {
+        for modifier in HotkeyModifier.allCases {
+            let siblings = HotkeyModifier.allCases.filter { $0.classMask == modifier.classMask }
+            let expected = siblings.reduce(UInt64(0)) { $0 | $1.deviceMask }
+            #expect(modifier.classDeviceMask == expected)
+        }
+    }
+
+    @Test func 集合のクラスマスクは論理和になる() {
+        #expect(HotkeyModifier.combinedClassMask([]) == 0)
+        #expect(HotkeyModifier.combinedClassMask([.leftControl]) == 0x0004_0000)
+        #expect(HotkeyModifier.combinedClassMask([.leftControl, .rightControl]) == 0x0004_0000)
+        #expect(
+            HotkeyModifier.combinedClassMask([.leftControl, .leftShift]) == 0x0004_0000 | 0x0002_0000)
+    }
+
     @Test func rawValueはUserDefaults互換のまま() {
         // 保存済み設定（stringArray）と互換を保つため、rawValue は変えない。
         #expect(HotkeyModifier.leftControl.rawValue == "leftControl")
         #expect(HotkeyModifier.rightCommand.rawValue == "rightCommand")
         #expect(HotkeyMode.pushToTalk.rawValue == "pushToTalk")
         #expect(HotkeyMode.toggle.rawValue == "toggle")
+    }
+}
+
+@Suite struct HotkeyFlagsEvaluatorTests {
+    // CGEventFlags の写し（テスト内の可読性用）。
+    private let maskControl: UInt64 = 0x0004_0000
+    private let maskShift: UInt64 = 0x0002_0000
+    private let maskAlphaShift: UInt64 = 0x0001_0000  // Caps Lock（LED 状態）
+    private let leftControlDevice: UInt64 = 0x0000_0001
+    private let rightControlDevice: UInt64 = 0x0000_2000
+    private let leftShiftDevice: UInt64 = 0x0000_0002
+
+    @Test func 空集合は常にfalse() {
+        #expect(!HotkeyFlagsEvaluator.isDown(flags: 0, modifiers: []))
+        #expect(!HotkeyFlagsEvaluator.isDown(flags: .max, modifiers: []))
+    }
+
+    @Test func 物理キーの押下と解放を判定する() {
+        let mods: Set<HotkeyModifier> = [.leftControl]
+        #expect(HotkeyFlagsEvaluator.isDown(flags: maskControl | leftControlDevice, modifiers: mods))
+        #expect(!HotkeyFlagsEvaluator.isDown(flags: 0, modifiers: mods))
+        // device ビット単独でも従来どおり押下扱い（後方互換）。
+        #expect(HotkeyFlagsEvaluator.isDown(flags: leftControlDevice, modifiers: mods))
+    }
+
+    @Test func 左右の誤検出を防ぐ() {
+        // 左 Control 選択中に物理の右 Control → 右 device ビットが立つのでフォールバック不成立。
+        #expect(!HotkeyFlagsEvaluator.isDown(
+            flags: maskControl | rightControlDevice, modifiers: [.leftControl]))
+        #expect(!HotkeyFlagsEvaluator.isDown(
+            flags: maskControl | leftControlDevice, modifiers: [.rightControl]))
+        // 左右同時押しは左選択でも成立。
+        #expect(HotkeyFlagsEvaluator.isDown(
+            flags: maskControl | leftControlDevice | rightControlDevice, modifiers: [.leftControl]))
+    }
+
+    @Test func リマップ由来のクラスマスクのみでも押下扱い() {
+        // システム設定で Caps Lock→Control: maskControl だけ立ち device ビットが無い。
+        #expect(HotkeyFlagsEvaluator.isDown(flags: maskControl, modifiers: [.leftControl]))
+        #expect(HotkeyFlagsEvaluator.isDown(flags: maskControl, modifiers: [.rightControl]))
+        // Caps Lock LED（maskAlphaShift）が同時に立っていても影響しない。
+        #expect(HotkeyFlagsEvaluator.isDown(
+            flags: maskControl | maskAlphaShift, modifiers: [.leftControl]))
+        // 通常押下に余剰ビットが混ざっても影響しない。
+        #expect(HotkeyFlagsEvaluator.isDown(
+            flags: maskControl | leftControlDevice | maskAlphaShift, modifiers: [.leftControl]))
+        // クラス違いは不成立（Shift 選択中に Control リマップ）。
+        #expect(!HotkeyFlagsEvaluator.isDown(flags: maskControl, modifiers: [.leftShift]))
+    }
+
+    @Test func 複数修飾キーはANDで判定する() {
+        let mods: Set<HotkeyModifier> = [.leftControl, .leftShift]
+        #expect(HotkeyFlagsEvaluator.isDown(
+            flags: maskControl | maskShift | leftControlDevice | leftShiftDevice, modifiers: mods))
+        #expect(!HotkeyFlagsEvaluator.isDown(
+            flags: maskControl | leftControlDevice, modifiers: mods))
+        // Control はリマップ・Shift は物理の混在。
+        #expect(HotkeyFlagsEvaluator.isDown(
+            flags: maskControl | maskShift | leftShiftDevice, modifiers: mods))
+        // 左 Shift 物理＋右 Control 物理（左 Control 選択）→ 不成立。
+        #expect(!HotkeyFlagsEvaluator.isDown(
+            flags: maskControl | maskShift | leftShiftDevice | rightControlDevice, modifiers: mods))
+    }
+
+    @Test func 同クラス左右両選択の挙動() {
+        let mods: Set<HotkeyModifier> = [.leftControl, .rightControl]
+        // 両 device ビット → 成立（従来どおり）。
+        #expect(HotkeyFlagsEvaluator.isDown(
+            flags: maskControl | leftControlDevice | rightControlDevice, modifiers: mods))
+        // 片側のみ → 不成立（従来どおり AND）。
+        #expect(!HotkeyFlagsEvaluator.isDown(
+            flags: maskControl | leftControlDevice, modifiers: mods))
+        // リマップ由来（クラスのみ）→ 左右区別不能のため押下扱い（仕様）。
+        #expect(HotkeyFlagsEvaluator.isDown(flags: maskControl, modifiers: mods))
     }
 }
 

@@ -99,9 +99,14 @@ final class HotkeyService {
     /// C コールバックから呼ばれる。修飾キーの状態変化を解釈してハンドラを発火する。
     fileprivate func handleFlagsChanged(_ flags: UInt64) {
         guard !modifiers.isEmpty else { return }
-        // 設定したすべての修飾キーが同時に押されている間だけ「押下」とみなす（device ビットで左右判定）。
-        let combined = HotkeyModifier.combinedMask(modifiers)
-        applyDownState((flags & combined) == combined)
+        // 設定したすべての修飾キーが同時に押されている間だけ「押下」とみなす。
+        // 通常は device ビットで左右判定し、システム設定リマップ（Caps Lock→Control 等）由来で
+        // device ビットが立たないイベントはクラスマスクへフォールバックする（HotkeyFlagsEvaluator）。
+        // リマップキーは keyCode がテーブル外（例: Caps Lock=57）のため keyState でも down を
+        // 報告しないが、固着検出は押下実績ゲート（ReleaseStuckDetector）が誤発火を抑止する。
+        let isDown = HotkeyFlagsEvaluator.isDown(flags: flags, modifiers: modifiers)
+        hkLog.debug("flagsChanged: flags=\(flags, privacy: .public) isDown=\(isDown, privacy: .public)")
+        applyDownState(isDown)
     }
 
     /// タップ無効化中に取りこぼした押下/解放を回復する。

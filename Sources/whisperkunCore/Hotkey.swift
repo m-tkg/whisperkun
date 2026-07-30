@@ -80,4 +80,32 @@ public enum HotkeyModifier: String, CaseIterable, Codable, Sendable {
     public static func combinedMask(_ set: Set<HotkeyModifier>) -> UInt64 {
         set.reduce(UInt64(0)) { $0 | $1.deviceMask }
     }
+
+    /// device-independent な修飾クラスのマスク（左右を区別しない）。`CGEventFlags` の
+    /// maskControl / maskShift / maskAlternate / maskCommand の写し（Core は CoreGraphics に
+    /// 依存しないため数値リテラルで持つ。写し間違いはテストで SDK 値と突き合わせて検出）。
+    public var classMask: UInt64 {
+        switch self {
+        case .leftControl, .rightControl: return 0x0004_0000  // maskControl
+        case .leftShift, .rightShift: return 0x0002_0000  // maskShift
+        case .leftOption, .rightOption: return 0x0008_0000  // maskAlternate
+        case .leftCommand, .rightCommand: return 0x0010_0000  // maskCommand
+        }
+    }
+
+    /// 同クラス（左右両方）の deviceMask の論理和。システム設定リマップ由来イベントの
+    /// フォールバック判定（左右どちらの device ビットも立っていないか）に使う。
+    public var classDeviceMask: UInt64 {
+        switch self {
+        case .leftControl, .rightControl: return 0x0000_2001
+        case .leftShift, .rightShift: return 0x0000_0006
+        case .leftOption, .rightOption: return 0x0000_0060
+        case .leftCommand, .rightCommand: return 0x0000_0018
+        }
+    }
+
+    /// 集合の device-independent クラスマスクの論理和（左右を畳んだもの）。
+    public static func combinedClassMask(_ set: Set<HotkeyModifier>) -> UInt64 {
+        set.reduce(UInt64(0)) { $0 | $1.classMask }
+    }
 }
