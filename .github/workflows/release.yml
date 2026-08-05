@@ -14,7 +14,7 @@ jobs:
     # macos-latest（現状 macOS 15）ではビルドできない。Xcode 26 を含む macos-26 を使う。
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
       - name: Resolve version
         id: ver
