@@ -27,6 +27,14 @@ final class SettingsStore {
     var aiFormattingEnabled: Bool {
         didSet { defaults.set(aiFormattingEnabled, forKey: Keys.aiFormattingEnabled) }
     }
+    /// 録音に使う入力デバイスの UID。nil はシステム既定のマイクを使う（既定）。
+    var inputDeviceUID: String? {
+        didSet { Self.store(inputDeviceUID, forKey: Keys.inputDeviceUID, in: defaults) }
+    }
+    /// 選択中デバイスの表示名。未接続時に設定画面で名前を出すためだけに保持する。
+    var inputDeviceName: String? {
+        didSet { Self.store(inputDeviceName, forKey: Keys.inputDeviceName, in: defaults) }
+    }
 
     private let defaults: UserDefaults
 
@@ -36,6 +44,8 @@ final class SettingsStore {
         static let hotkeyModifiers = "hotkeyModifiers"   // 新: 修飾キー集合
         static let defaultLocaleID = "defaultLocaleID"
         static let aiFormattingEnabled = "aiFormattingEnabled"
+        static let inputDeviceUID = "inputDeviceUID"
+        static let inputDeviceName = "inputDeviceName"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -44,6 +54,17 @@ final class SettingsStore {
         self.hotkeyModifiers = Self.loadModifiers(from: defaults)
         self.defaultLocaleID = defaults.string(forKey: Keys.defaultLocaleID) ?? "ja-JP"
         self.aiFormattingEnabled = defaults.object(forKey: Keys.aiFormattingEnabled) as? Bool ?? true
+        self.inputDeviceUID = defaults.string(forKey: Keys.inputDeviceUID)
+        self.inputDeviceName = defaults.string(forKey: Keys.inputDeviceName)
+    }
+
+    /// nil は「未設定」としてキーごと削除する（空文字を残さない）。
+    private static func store(_ value: String?, forKey key: String, in defaults: UserDefaults) {
+        if let value, !value.isEmpty {
+            defaults.set(value, forKey: key)
+        } else {
+            defaults.removeObject(forKey: key)
+        }
     }
 
     /// 修飾キー集合を読み込む。新キーが無ければ旧・単一キー設定から移行する。既定は空（未設定）。
