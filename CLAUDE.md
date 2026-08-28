@@ -120,6 +120,12 @@ base は `Localization.swift` の `L.string`/`L.format` 方式だが、**whisper
   `withTaskGroup` で**タイムアウト（3秒）**を設け、超過時は暫定テキストで確定して `phase` を戻す。
 - **辞書置換の性能**: トークン化（`NLTokenizer`）は `apply` で**1回だけ**。境界は `String.Index` 集合で持ち、
   ルールごとの再トークン化や `String.distance` の O(n²) を避ける。
+- **入力デバイス（マイク）選択**: 設定には CoreAudio の**永続 UID**（`kAudioDevicePropertyDeviceUID`）を保存する
+  （`AudioDeviceID` は再接続・再起動で変わるため保存に使わない）。録音開始時に `AudioInputDeviceService` が
+  UID→`AudioDeviceID` を解決し、`TranscriptionService` が `engine.inputNode.auAudioUnit.setDeviceID(_:)` で適用する。
+  **`inputNode.outputFormat(forBus:)` を読む前に設定する**（デバイスごとにサンプルレート/チャンネル数が違うため）。
+  未設定・未接続・適用失敗はいずれもシステム既定へフォールバックし、録音自体は必ず行う。
+  設定画面の一覧は `AudioInputDeviceMonitor`（`kAudioHardwarePropertyDevices` のリスナー）で抜き差しに追従する。
 - **ローカル vs 本番の TCC 衝突**: 同一バンドルIDだと権限が共有され、本番許可済みだとローカルを独立許可できない。
   検証は `LOCAL=1`（別バンドルID `*.local`）でビルドする。
 - **ad-hoc 署名**は再ビルドごとに署名が変わり TCC 権限が外れる。保持したいときは安定した署名IDを使う（docs/SIGNING.md）。

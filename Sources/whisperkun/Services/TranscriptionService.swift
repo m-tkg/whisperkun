@@ -34,6 +34,10 @@ final class TranscriptionService {
     /// 文字起こしに使うロケール。
     var locale: Locale
 
+    /// 録音に使う入力デバイスの UID。nil ならシステム既定のマイクを使う。
+    /// 指定デバイスが見つからない場合も既定へフォールバックする（録音は必ず行う）。
+    var inputDeviceUID: String?
+
     /// 取り込み用エンジン。セッションごとに作り直す（使い回さない）。
     /// 単一インスタンスを使い回すと、開始/停止サイクルをまたいでリアルタイム状態が
     /// 持ち越され、停止時に CoreAudio の IO スレッドが解放済み IOProc を呼ぶ競合
@@ -117,6 +121,10 @@ final class TranscriptionService {
             // セッションごとに新しいエンジンを生成する（使い回しによるリアルタイム状態の
             // 持ち越し＝停止時の IO スレッド競合を断つ）。コミットするまで self には載せない。
             let engine = AVAudioEngine()
+            // 取り込みフォーマットを読む前に入力デバイスを差し替える（デバイスごとに
+            // サンプルレート/チャンネル数が異なるため、順序を逆にすると誤ったフォーマットで
+            // タップを張ることになる）。
+            selectInputDevice(on: engine)
             let recordingFormat = engine.inputNode.outputFormat(forBus: 0)
             engine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: recordingFormat) { @Sendable buffer, _ in
                 if let converted = try? bufferConverter.convert(buffer) {
@@ -215,6 +223,21 @@ final class TranscriptionService {
             txLog.warning("finalize timed out after \(seconds, privacy: .public)s; forcing stop")
         }
         return finished ?? false
+    }
+
+    /// 設定された入力デバイスをエンジンへ適用する。未設定・未接続・失敗時は
+    /// 何もせずシステム既定の入力デバイスのまま続行する。
+    private func selectInputDevice(on engine: AVAudioEngine) {
+        guard let uid = inputDeviceUID, !uid.isEmpty else { return }
+        guard let deviceID = AudioInputDeviceService.deviceID(forUID: uid) else {
+            txLog.warning("input device not connected: \(uid, privacy: .public); using system default")
+            return
+        }
+        do {
+            try engine.inputNode.auAudioUnit.setDeviceID(deviceID)
+        } catch {
+            txLog.warning("failed to set input device \(uid, privacy: .public): \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     private func apply(text: AttributedString, isFinal: Bool) {

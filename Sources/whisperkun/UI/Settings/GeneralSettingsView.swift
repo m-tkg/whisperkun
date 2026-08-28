@@ -1,4 +1,5 @@
 import SwiftUI
+import whisperkunCore
 
 struct GeneralSettingsView: View {
     @Bindable var appState: AppState
@@ -8,6 +9,11 @@ struct GeneralSettingsView: View {
     @State private var launchAtLogin = LaunchAtLoginService.isEnabled
     /// 登録/解除に失敗したときのメッセージ。
     @State private var launchAtLoginError: String?
+
+    /// 接続中の入力デバイス一覧。表示中は抜き差しに追従する。
+    @State private var inputDevices: [AudioInputDevice] = []
+    /// デバイス構成の変化監視（表示中だけ購読する）。
+    @State private var deviceMonitor = AudioInputDeviceMonitor()
 
     /// 文字起こしの選択肢（よく使う言語）。
     private let locales: [(id: String, label: String)] = [
@@ -47,6 +53,20 @@ struct GeneralSettingsView: View {
             }
 
             Section("文字起こし") {
+                Picker("マイク", selection: Binding(
+                    get: { appState.settings.inputDeviceUID },
+                    set: { selectInputDevice(uid: $0) }
+                )) {
+                    Text("システム既定").tag(String?.none)
+                    ForEach(inputDevices) { device in
+                        // デバイス名はシステム提供の固有名なので翻訳しない。
+                        Text(verbatim: device.name).tag(String?.some(device.uid))
+                    }
+                    if let missing = missingDevice {
+                        Text("\(missing.name)（未接続）").tag(String?.some(missing.uid))
+                    }
+                }
+
                 Picker("既定の言語", selection: Binding(
                     get: { appState.settings.defaultLocaleID },
                     set: { appState.settings.defaultLocaleID = $0; appState.applySettings() }
@@ -59,7 +79,34 @@ struct GeneralSettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
-        .onAppear { launchAtLogin = LaunchAtLoginService.isEnabled }
+        .onAppear {
+            launchAtLogin = LaunchAtLoginService.isEnabled
+            refreshInputDevices()
+            deviceMonitor.start { refreshInputDevices() }
+        }
+        .onDisappear { deviceMonitor.stop() }
+    }
+
+    /// 保存済みだが現在は未接続のデバイス（選択肢に残して再接続時に選択を戻す）。
+    private var missingDevice: AudioInputDevice? {
+        AudioInputDeviceSelection.missingPreferred(
+            available: inputDevices,
+            preferredUID: appState.settings.inputDeviceUID,
+            preferredName: appState.settings.inputDeviceName
+        )
+    }
+
+    private func refreshInputDevices() {
+        inputDevices = AudioInputDeviceService.availableInputDevices()
+    }
+
+    /// マイクの選択を保存する。未接続時の表示用に名前も一緒に保持する。
+    private func selectInputDevice(uid: String?) {
+        appState.settings.inputDeviceUID = uid
+        appState.settings.inputDeviceName = uid.flatMap { uid in
+            inputDevices.first { $0.uid == uid }?.name ?? missingDevice?.name
+        }
+        appState.applySettings()
     }
 
     /// ログイン項目の登録/解除を行い、結果でトグルとエラー表示を更新する。

@@ -30,6 +30,9 @@ final class DictationCoordinator {
     /// 文字起こしの既定ロケール。
     var defaultLocaleID = "ja-JP"
 
+    /// 録音に使う入力デバイスの UID（nil はシステム既定のマイク）。
+    var inputDeviceUID: String?
+
     /// 録音開始時に SwiftData から最新データを取得するためのプロバイダ。
     var loadPipelineData: (() -> PipelineData)?
 
@@ -126,6 +129,7 @@ final class DictationCoordinator {
         targetBundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
 
         transcription.locale = Locale(identifier: defaultLocaleID)
+        transcription.inputDeviceUID = inputDeviceUID
 
         // AI整形を使うなら、発話中にモデルを読み込んでおき確定後のレイテンシを下げる。
         if aiFormattingEnabled {
